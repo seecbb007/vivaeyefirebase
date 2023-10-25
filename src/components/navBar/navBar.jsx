@@ -10,8 +10,15 @@ import goldenAvatar from "../../assest/goldenavatar.jpg";
 import shopCartContext from "../../context/shopcartContext";
 import Dropdown from "../shoppages/dropdownlist/dropdown";
 import Viewaccount from "../viewaccount/viewaccount";
+import { useSelector, useDispatch } from "react-redux";
+import { setLoginData, setUserInfoData } from "../../actions/loginActions";
 
-export default function Navbar({ shopCard18, updateFilter }) {
+import axios from "axios";
+
+import { db } from "../../firebase/config";
+import { doc, getDoc } from "firebase/firestore";
+
+export default function Navbar({ shopCard18 }) {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [navBarHeight, setNavBarHeight] = useState(150);
   const location = useLocation();
@@ -26,14 +33,58 @@ export default function Navbar({ shopCard18, updateFilter }) {
     useContext(signContext);
 
   // add to shopping cart context
-  const { card18, setCard18 } = useContext(shopCartContext);
-  let itemInCart_length = card18.filter((eachcard) => {
-    // console.log("eacj", eachcard.addedInCart);
-    return eachcard.quantity > 0;
-  })?.length;
+  const {
+    shoppingCartList,
+    setShoppingCartList,
+    productDisplayList,
+    setProductDispalyList,
+    card18,
+  } = useContext(shopCartContext);
+
   // const providerValue = useCallback(() => {
   //   return cartStatus, setCartStatus;
   // }, [cartStatus, setCartStatus]);
+
+  //get data from redux reducer
+  const dispatch = useDispatch();
+  // useEffect(()=>{
+  //   axios
+  //     .post("http://127.0.0.1:8080/api/v1/signin", loginUser)
+  //     .then((res) => {
+  //       console.log("fanhui shnme dongxi aaaa ", res.data);
+  //       navigate("/");
+  //       dispatch(setUserInfoData(res.data?.data));
+  //       dispatch(setLoginData(true));
+  //       localStorage.setItem("token", JSON.stringify(res.data.token));
+  //     })
+  //     .catch((error) => {
+  //       // console.log("Account created, could not logined in", error);
+  //     });
+
+  // },[])
+
+  const ifLogedin = useSelector((state) => {
+    return state?.loginReducer?.ifLogedin;
+  });
+  const logInStatus = localStorage.getItem("token");
+  // console.log("loged", loged);
+  const UserInfoData = useSelector((state) => {
+    return state?.loginReducer?.userInfo;
+  });
+
+  const shoppingCartListData = useSelector((state) => {
+    return state?.shoppingCartReducer?.shoppingCartList;
+  });
+  let itemInCart_length = shoppingCartListData?.length;
+  // console.log("NAVBAR userinfodata", UserInfoData);
+  // console.log("NAVBAR IFLOGED", ifLogedin);
+  const handleSignout = () => {
+    // dispatch(setLoginData(false));
+    dispatch(setUserInfoData(""));
+    localStorage.removeItem("token", "");
+    localStorage.removeItem("fullname", "");
+    localStorage.removeItem("email", "");
+  };
 
   function onScroll() {
     setScrollPosition(document.documentElement.scrollTop);
@@ -63,6 +114,36 @@ export default function Navbar({ shopCard18, updateFilter }) {
   const handleShoppingCartClick = () => {
     setCartStatus(true);
   };
+  // shop page button clcik and refresh shop page
+  const handleShopPageClick = () => {
+    setProductDispalyList(card18);
+  };
+  //firebase
+  // const refId = JSON.parse(localStorage.getItem("_id"));
+  // console.log("refId  000", refId);
+  // useEffect(() => {
+  //   const docRef = doc(db, "users", refId);
+  //   const docSnap = getDoc(docRef);
+
+  //   if (docSnap.exists()) {
+  //     console.log("Document data:", docSnap.data());
+  //   } else {
+  //     // docSnap.data() will be undefined in this case
+  //     console.log("No such document!");
+  //   }
+  // }, [refId]);
+  // const getData = async () => {
+  //   const docRef = doc(db, "users", { refId });
+  //   const docSnap = await getDoc(docRef);
+
+  //   if (docSnap.exists()) {
+  //     console.log("Document data:", docSnap.data());
+  //   } else {
+  //     // docSnap.data() will be undefined in this case
+  //     console.log("No such document!");
+  //   }
+  // };
+  // console.log(JSON.parse(localStorage.getItem("fullname")));
 
   return (
     <div>
@@ -74,18 +155,14 @@ export default function Navbar({ shopCard18, updateFilter }) {
             </div>
           </Link>
           <div className="navMenu">
-            {/* <NavLink
-              to="/"
-              className={(isActive) => {
-                return isActive ? "good" : "";
-              }}
-            >
-              Home
-            </NavLink> */}
             <NavLink to="/" className="navButt">
               Home
             </NavLink>
-            <NavLink to="/shop" className="navButt">
+            <NavLink
+              to="/shop"
+              className="navButt"
+              onClick={() => handleShopPageClick()}
+            >
               Shop
             </NavLink>
             {/* <NavLink
@@ -108,10 +185,7 @@ export default function Navbar({ shopCard18, updateFilter }) {
             <div className="filterbutt">
               {/*首先在App.js里面已经传给Navbar这些数据，再接着传入命名为Filterpopper 函数组件（filter.jsx），传shopCard18卡片数据，传 updateFilter函数 */}
               {location.pathname === "/shop" ? (
-                <Filterpopper
-                  shopCard18={shopCard18}
-                  updateFilter={updateFilter}
-                />
+                <Filterpopper shopCard18={shopCard18} />
               ) : (
                 ""
               )}
@@ -186,7 +260,8 @@ export default function Navbar({ shopCard18, updateFilter }) {
                 <div className="addNumber"> {itemInCart_length}</div>
               )}
             </div>
-            {ifsigned === true ? (
+            {logInStatus?.length > 0 ? (
+              // === true
               <div className="ifSignedContainer">
                 <div
                   className="ifsigned_true"
@@ -194,10 +269,11 @@ export default function Navbar({ shopCard18, updateFilter }) {
                     setuserDropdownClassname(!userDropdownClassname)
                   }
                 >
-                  {/* <div className="signupInfo_Name">{signupInfo.fullname}</div> */}
                   <div className="signupInfo_Name">
-                    {JSON.parse(localStorage.getItem("token")).fullname}
+                    {/* {UserInfoData?.fullname} */}
+                    {JSON.parse(localStorage.getItem("fullname"))}
                   </div>
+                  <div className="signupInfo_Name"></div>
                   <div className="goldenAvatar">
                     <img
                       src={goldenAvatar}
@@ -258,10 +334,7 @@ export default function Navbar({ shopCard18, updateFilter }) {
                       </svg>
                     </Link>
                   </div>
-                  <div
-                    className="user_signout"
-                    onClick={() => setIfsigned(false)}
-                  >
+                  <div className="user_signout" onClick={() => handleSignout()}>
                     <Link
                       to="/signin"
                       style={{

@@ -3,15 +3,38 @@ import MainContext from "./context";
 import "../shoppingcart/shoppingcart.css";
 import shopCartContext from "../../context/shopcartContext";
 import ShoppingcartCard from "./shoppingcartCard";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import signContext from "../../context/signContext";
+import { useSelector, useDispatch } from "react-redux";
+import { setLoginData, setUserInfoData } from "../../actions/loginActions";
+import { setCurrentShoppingCartList } from "../../actions/shoppingCartAction";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
+import Button from "@mui/material/Button";
+import axios from "axios";
+
 export default function Shoppingcart({ handleShoppingCartClick }) {
+  //get data from redux reducer
+  const dispatch = useDispatch();
+  // const ifLogedin = useSelector((state) => {
+  //   // console.log("shoppingcart", state?.loginReducer);
+  //   return state?.loginReducer?.ifLogedin;
+  // });
+  const ifLogedin = localStorage.getItem("token");
+  const shoppingCartData = useSelector((state) => {
+    return state?.shoppingCartReducer?.shoppingCartList;
+  });
+  // console.log("111shoppingCartData", shoppingCartData);
+
   const [totalprice, setTotalPrice] = useState([]);
   const ref = useRef(null);
   const { cartStatus, setCartStatus } = useContext(MainContext);
-  const { card18, setCard18 } = useContext(shopCartContext);
+  const { shoppingCartList, setShoppingCartList } = useContext(shopCartContext);
+  const { signupInfo, setSignupInfo, ifsigned, setIfsigned } =
+    useContext(signContext);
 
-  const itemInCart = card18.filter((eachcard) => {
-    return eachcard.addedInCart === true && eachcard.quantity > 0;
-  });
+  const navigate = useNavigate();
+  const itemInCart = shoppingCartData;
 
   const cartClassName =
     cartStatus === true ? "shoppingCart" : "hidden shoppingCart";
@@ -39,7 +62,7 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
 
   // Calculate subtotal price
 
-  const subtotalPriceList = itemInCart.map((eachitem) => {
+  const subtotalPriceList = itemInCart?.map((eachitem) => {
     return eachitem.price * eachitem.quantity;
   });
 
@@ -50,21 +73,51 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
   );
   // Clear Basket Button
   const handleClearBasket = () => {
-    let newList = card18.map((eachcard) => {
-      if (eachcard.addedInCart === true) {
-        return {
-          ...eachcard,
-          quantity: 0,
-          addedInCart: false,
-        };
-      }
-      return eachcard;
-    });
-    setCard18(newList);
+    axios
+      .post("https://vivaser.onrender.com/api/v1/shopproductCardDeleteAll")
+      .then((res) => {
+        // console.log("Empty shopping cart", res.data);
+        axios
+          .get("https://vivaser.onrender.com/api/v1/shop")
+          .then((res) => {
+            // console.log("Empty whole list", res.data.data);
+            dispatch(setCurrentShoppingCartList(res.data.data));
+          })
+          .catch((error) => {
+            console.log("faile to empty", error);
+          });
+      })
+      .catch((error) => {
+        console.log("Failed to empty shopping cart", error);
+      });
+    // setShoppingCartList([]);
   };
   // check out Button
-  const handleCheckOut = () => {};
+  const handleCheckOut = () => {
+    if (
+      subtotalPrice > 0 &&
+      ifLogedin?.length > 0
 
+      // === true
+    ) {
+      navigate(`/checkout/step1`);
+      setCartStatus(false);
+    }
+  };
+  //MUI show backdrop
+  const [open, setOpen] = React.useState(false);
+  const handleClose = () => {
+    setOpen(false);
+  };
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  //get redux data
+
+  // const iflogedin = useSelector((state) => {
+  //   return state?.ifLogedin;
+  // });
   return (
     <div>
       <div className={cartClassName} ref={ref}>
@@ -92,8 +145,8 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
             </div>
           </div>
           <div className="sc_middle">
-            {itemInCart.map((eachItem, index) => {
-              return <ShoppingcartCard eachItem={eachItem} key={index} />;
+            {itemInCart?.map((eachItem, index) => {
+              return <ShoppingcartCard eachItem={eachItem} key={eachItem.id} />;
             })}
           </div>
           <div className="sc_bottom">
@@ -104,12 +157,61 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
                 .00
               </div>
             </div>
-            <div
-              className="sc_bottom_checkout"
-              onClick={() => handleCheckOut()}
-            >
-              CHECK OUT
-            </div>
+            <div></div>
+            {ifLogedin?.length > 0 ? (
+              // === true
+              <div
+                className="sc_bottom_checkout"
+                onClick={() => handleCheckOut()}
+              >
+                CHECK OUT
+              </div>
+            ) : (
+              <div
+                className="sc_bottom_checkout"
+                onClick={() => handleCheckOut()}
+              >
+                <Button onClick={handleOpen} sx={{ color: "#fff" }}>
+                  CHECK OUT
+                </Button>
+                <Backdrop
+                  sx={{
+                    color: "#fff",
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                  }}
+                  open={open}
+                  onClick={handleClose}
+                >
+                  <div className="pooperwindow">
+                    <div className="pooperwindow_title">
+                      You must sign in to continue checking out
+                    </div>
+                    <div className="buttongroup">
+                      <Link to="/">
+                        <button className="popper_butts">
+                          Continue Shopping
+                        </button>
+                      </Link>
+                      <Link to="/signin">
+                        <button
+                          className="popper_butts"
+                          style={{
+                            color: "white",
+                            backgroundColor: "#101010",
+                            border: " 1px solid #101010",
+                          }}
+                        >
+                          Sign In to Check Out
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+                  {/* <CircularProgress color="inherit" /> */}
+                </Backdrop>
+              </div>
+            )}
+
+            <Outlet />
           </div>
         </div>
       </div>

@@ -3,9 +3,27 @@ import { Link, useLocation } from "react-router-dom";
 import "../signup/signup.css";
 import signContext from "../../context/signContext";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { setLoginData, setUserInfoData } from "../../actions/loginActions";
+//firebase
+
+import { collection, addDoc, getDocs } from "firebase/firestore";
+import { app, db } from "../../firebase/config";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { getDatabase, ref, get } from "firebase/database";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function SignupIn({ whichSign, userContent, authQuestion }) {
   const location = useLocation();
+  const { signupInfo, setSignupInfo, ifsigned, setIfsigned } =
+    useContext(signContext);
+  const dispatch = useDispatch();
   const socialmedia = [
     {
       svg: (
@@ -74,6 +92,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       cName: "media_github",
     },
   ];
+  //Regular Expression to check fullname, email and password requirements
   let matchfullName = `^[a-zA-Z]{4,}(?: [a-zA-Z]+){0,2}$`;
   let regfullName = new RegExp(matchfullName, "i");
 
@@ -90,18 +109,19 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
   let passwordUppercaseValidation = `(?=.*?[A-Z]).{8,}`;
   let regPassword_uppercase = new RegExp(passwordUppercaseValidation, "g");
 
-  const { signupInfo, setSignupInfo, ifsigned, setIfsigned } =
-    useContext(signContext);
+  const [inputValidation, setInputValidation] = useState({
+    validateFullname: "* Full Name",
+    validateEmail: "* Email",
+    validatePassword: "* Password",
+  });
   const [currentUserinfo, setCurrentUserinfo] = useState({
     fullname: "",
     email: "",
     password: "",
   });
-
-  const [inputValidation, setInputValidation] = useState({
-    validateFullname: "* Full Name",
-    validateEmail: "* Email",
-    validatePassword: "* Password",
+  const [currentLoginUserInfo, setCurrentLoginUserInfo] = useState({
+    email: "",
+    password: "",
   });
   const [validName, setValidName] = useState("* Full Name");
   const [validEmail, setValidEmail] = useState("* Email");
@@ -114,20 +134,8 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
         regfullName.test(currentUserinfo.fullname) === false &&
         currentUserinfo.fullname?.length !== 0
       ) {
-        // setInputValidation({
-        //   ...inputValidation,
-        //   validateFullname: "Name should be at least 4 characters.",
-        // });
-        // setInputValidation({
-        //   ...inputValidation,
-        //   validateFullname: "hahahahah",
-        // });
         setValidName("Name should be at least 4 characters.");
       } else if (regfullName.test(currentUserinfo.fullname) === true) {
-        // setInputValidation({
-        //   ...inputValidation,
-        //   validateFullname: "* Full Name",
-        // });
         setValidName("* Full Name");
       }
       //Email
@@ -135,16 +143,8 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
         regEmail.test(currentUserinfo.email) === false &&
         currentUserinfo.email?.length !== 0
       ) {
-        // setInputValidation({
-        //   ...inputValidation,
-        //   validateEmail: "Email is not valid.",
-        // });
         setValidEmail("Email is not valid.");
       } else if (regEmail.test(currentUserinfo.email) === true) {
-        // setInputValidation({
-        //   ...inputValidation,
-        //   validateEmail: "* Email",
-        // });
         setValidEmail("* Email");
       }
       //Password
@@ -176,59 +176,322 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     [currentUserinfo.fullname, currentUserinfo.email, currentUserinfo.password]
   );
 
+  //get ifSignedin info & userinfo from server
+
+  const handleChange = (e) => {
+    let title = e.target.name;
+    let value = e.target.value;
+    // console.log("title", title);
+    // console.log("value", value);
+    setCurrentUserinfo({ ...currentUserinfo, [title]: value });
+    console.log("currentUserinfo", currentUserinfo);
+  };
+
+  const signinHandleChange = (e) => {
+    let title = e.target.name;
+    let value = e.target.value;
+    setCurrentLoginUserInfo({ ...currentLoginUserInfo, [title]: value });
+    console.log("currentLoginUserInfo", currentLoginUserInfo);
+  };
+
+  //add data to firebase database
+  const addUser = async (userinfoId) => {
+    try {
+      const docRef = await addDoc(collection(db, "users"), {
+        fullname: currentUserinfo.fullname,
+        email: currentUserinfo.email,
+        password: currentUserinfo.password,
+        id: userinfoId,
+      });
+      console.log("Document written with ID: ", docRef.id);
+      //sign in
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  };
+  const submit = (e) => {
+    e.preventDefault();
+    if (
+      regfullName.test(currentUserinfo.fullname) === true &&
+      regEmail.test(currentUserinfo.email) === true &&
+      regPassword.test(currentUserinfo.password) === true
+    ) {
+      const auth = getAuth();
+      createUserWithEmailAndPassword(
+        auth,
+        currentUserinfo.email,
+        currentUserinfo.password
+      )
+        .then((userCredential) => {
+          // Sign up
+          const user = userCredential.user;
+          console.log("sign up user", user);
+          addUser(user.uid);
+          //dispatch(setUserInfoData(user));
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log("error", errorCode);
+          console.log("errorMessage", errorMessage);
+        });
+
+      // axios
+      //   .post("https://vivaser.onrender.com/api/v1/signup", currentUserinfo)
+      //   .then((res) => {
+      //     let loginUser = {
+      //       email: currentUserinfo.email,
+      //       password: currentUserinfo.password,
+      //     };
+      //     // console.log("code", res.data);
+      //     // console.log("SIGNUPiN", loginUser);
+      //     if (res.data.code === 1) {
+      //       // axios.post("http://127.0.0.1:8080/api/v1/signStatus",ifsigned)
+      //       axios
+      //         .post("https://vivaser.onrender.com/api/v1/signin", loginUser)
+      //         .then((res) => {
+      //           // console.log("fanhui ", res.data);
+      //           navigate("/");
+      //           dispatch(setUserInfoData(res.data?.data));
+      //           // dispatch(setLoginData(true));
+      //           localStorage.setItem("token", JSON.stringify(res.data.token));
+      //           localStorage.setItem(
+      //             "fullname",
+      //             JSON.stringify(res.data.data.fullname)
+      //           );
+      //           localStorage.setItem(
+      //             "email",
+      //             JSON.stringify(res.data.data.email)
+      //           );
+      //         })
+      //         .catch((error) => {
+      //         });
+      //     } else {
+      //     }
+      //   })
+      //   .catch((error) => {
+      //     // console.log("Register Account Fail,Check error: ", error);
+      //   });
+    } else {
+    }
+  };
+
+  // const auth = getAuth();
+  // signInWithEmailAndPassword(
+  //   auth,
+  //   currentUserinfo.email,
+  //   currentUserinfo.password
+  // )
+  //   .then((userCredential) => {
+  //     // Signed in
+  //     const user = userCredential.user;
+  //     localStorage.setItem("token", JSON.stringify(user.accessToken));
+  //     // console.log("docRef.id", docRef.id);
+  //     console.log("sign in", user);
+  //     // const docRefid = doc(db, "users", docRef.id);
+  //     // const docSnap = getDoc(docRefid);
+
+  //     // if (docSnap.exists()) {
+  //     //   console.log("Document data:", docSnap.data());
+  //     //   // const signupFullname = docSnap.data().fullname;
+  //     //   // const email = docSnap.data().email;
+
+  //     //   // const user = { fullname: signupFullname, email: email };
+  //     //   // dispatch(setUserInfoData(user));
+  //     // } else {
+  //     //   // docSnap.data() will be undefined in this case
+  //     //   console.log("No such user document!");
+  //     // }
+  //     navigate("/");
+
+  //     // localStorage.setItem("_id", JSON.stringify(docRef.id));
+
+  //     // ...
+  //   })
+  //   .catch((error) => {
+  //     const errorCode = error.code;
+  //     const errorMessage = error.message;
+  //     console.log("error IN sign in", errorCode);
+  //     console.log("errorMessage sign in", errorMessage);
+  //   });
+  // const getData = async () => {
+  //   const docRef = doc(db, "users", "otDBUYwS9GDT4SMIaznx");
+  //   const docSnap = await getDoc(docRef);
+
+  //   if (docSnap.exists()) {
+  //     console.log("Document data:", docSnap.data());
+  //   } else {
+  //     // docSnap.data() will be undefined in this case
+  //     console.log("No such document!");
+  //   }
+  // };
+
+  ////9909099
+  // const getCurrentUserData = (currentEmail) => {
+  //   getDocs(collectionRef).then((req) => {
+  //     console.log(
+  //       req.docs.map((eachitem) => {
+  //         return { ...eachitem.data(), id: eachitem.id };
+  //       })
+  //     );
+  //   });
+  // };
+  const collectionRef = collection(db, "users");
+  const getCurrentUserData = (currentEmail) => {
+    getDocs(collectionRef).then((req) => {
+      console.log(
+        req.docs.map((eachitem) => {
+          return { ...eachitem.data(), id: eachitem.id };
+        })
+      );
+    });
+  };
+  function getUserData(uid) {
+    const db = getDatabase();
+    const userRef = ref(db, "users" + uid);
+
+    get(userRef)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          console.log("gggget", userData);
+        } else {
+          console.log("No such user exists");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+      });
+  }
+  const auth = getAuth();
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // User is signed in, see docs for a list of available properties
+      // https://firebase.google.com/docs/reference/js/auth.user
+      const uid = user.uid;
+      getUserData(uid);
+      // ...
+    } else {
+      // User is signed out
+      // ...
+    }
+  });
+
+  const submitIn = (e) => {
+    e.preventDefault();
+    //后端接user数据，后端返回响应
+    const auth = getAuth();
+
+    signInWithEmailAndPassword(
+      auth,
+      currentLoginUserInfo.email,
+      currentLoginUserInfo.password
+    )
+      .then((userCredential) => {
+        // Signed in
+        const user = userCredential.user;
+        // const refId = docRef.id;
+        // console.log("aa", auth);
+        // console.log("submitIn user", user);
+        // console.log("userid", user.uid);
+        // console.log("UserImpl", user.accessToken);\
+        getUserData(user.uid);
+        const auth = getAuth();
+        const users = auth.currentUser;
+
+        if (users) {
+          // User is signed in, see docs for a list of available properties
+          // https://firebase.google.com/docs/reference/js/auth.user
+          const uid = users.uid;
+
+          const providerData = users.providerData;
+          const tenantId = users.tenantId;
+          console.log("onchange", users);
+          console.log("providerData", providerData);
+          console.log("tenantId", tenantId);
+          // ...
+        } else {
+          // User is signed out
+          // ...
+        }
+
+        // getCurrentUserData(currentLoginUserInfo.email);
+        navigate("/");
+        // ...
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log("error sign in", errorCode);
+        console.log("errorMessage sign in", errorMessage);
+      });
+    // axios
+    //   .post("https://vivaser.onrender.com/api/v1/signin", currentLoginUserInfo)
+
+    //   .then((res) => {
+    //     // console.log("llogin res", res.data);
+    //     if (res.data.code === 1) {
+    //       // dispatch(setLoginData(true));
+    //       dispatch(setUserInfoData(res.data?.data));
+    //       localStorage.setItem("token", JSON.stringify(res.data.token));
+    //       localStorage.setItem(
+    //         "fullname",
+    //         JSON.stringify(res.data.data.fullname)
+    //       );
+    //       localStorage.setItem("email", JSON.stringify(res.data.data.email));
+    //       navigate("/");
+    //     } else {
+    //       console.log("check code");
+    //     }
+    //     // console.log("signin part", res.data);
+    //   })
+    //   .catch((error) => {
+    //     // console.log("app:failure error", error);
+    //   });
+  };
+  // function getUserData(uid) {
+  //   firebase
+  //     .database()
+  //     .ref("users/" + uid)
+  //     .once("value", (snap) => {
+  //       console.log(snap.val());
+  //     });
+  // }
+
+  // const auth = getAuth();
+  // const collectionRef = collection(database, "users");
+  // onAuthStateChanged(auth, (user) => {
+  //   if (user) {
+  //     // User is signed in, see docs for a list of available properties
+  //     // https://firebase.google.com/docs/reference/js/auth.user
+  //     const uid = user.uid;
+  //     getUserData(user.uid);
+  //     console.log("000", getUserData(user.uid));
+  //     // ...
+  //   } else {
+  //     // User is signed out
+  //     // ...
+  //   }
+  // });
+
+  const getData = async () => {
+    const docRef = doc(db, "users");
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      console.log("Document data:", docSnap.data());
+    } else {
+      // docSnap.data() will be undefined in this case
+      console.log("No such document!");
+    }
+  };
+
+  const ifLogedin = useSelector((state) => {
+    return state?.loginReducer?.ifLogedin;
+  });
+  // console.log("signupIn if logedIn", ifLogedin);
   //跳转
   const navigate = useNavigate();
-  useEffect(() => {
-    if (ifsigned === true) {
-      navigate("/");
-    }
-  }, [ifsigned]);
-
-  const handleinputChange = (e) => {
-    if (whichSign === "signup") {
-      if (e.target.type === "text") {
-        setCurrentUserinfo({ ...currentUserinfo, fullname: e.target.value });
-      } else if (e.target.type === "email") {
-        setCurrentUserinfo({ ...currentUserinfo, email: e.target.value });
-      } else if (e.target.type === "password") {
-        setCurrentUserinfo({ ...currentUserinfo, password: e.target.value });
-      }
-    } else {
-      if (e.target.type === "email") {
-        setCurrentUserinfo({ ...currentUserinfo, email: e.target.value });
-      } else if (e.target.type === "password") {
-        setCurrentUserinfo({ ...currentUserinfo, password: e.target.value });
-      }
-    }
-  };
-  // Jump to Home page after signed up
-  const sendinputtoSignup = (e) => {
-    if (location.pathname === "/signup") {
-      setIfsigned(true);
-      setSignupInfo(currentUserinfo);
-      localStorage.setItem("token", JSON.stringify(currentUserinfo));
-    } else if (location.pathname === "/signin") {
-      let localemail = JSON.parse(localStorage.getItem("token"))?.email;
-      let localpassword = JSON.parse(localStorage.getItem("token"))?.password;
-
-      if (
-        localemail === currentUserinfo?.email &&
-        localpassword === currentUserinfo?.password
-      ) {
-        setIfsigned(true);
-        setSignupInfo(currentUserinfo);
-      }
-      //  else if (localStorage =) {
-      //   setIfsigned(false);
-      //   setcouldnotFindWarn(true);
-      //   console.log("please sign up");
-      // }
-      else {
-        setIfsigned(false);
-        setIncorrectWarn(true);
-      }
-    }
-  };
 
   return (
     <div>
@@ -238,7 +501,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
             incorrectwarn ? "incorrectWarning" : "incorrectWarning_hidden"
           }
         >
-          Incorrect Email or Password. Please{" "}
+          Incorrect Email or Password. Please
           <Link
             to="/signup"
             style={{
@@ -248,17 +511,11 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
             }}
           >
             Sign Up
-          </Link>{" "}
+          </Link>
           If You are New User
         </div>
 
-        {/* <div className="incorrectWarning">Incorrect email or password</div> */}
         <div className="authContent_center">
-          {/* {whichSign === "Signup" ? (
-            <h3 className="authContent_title">Sign up to Viva</h3>
-          ) : (
-            <h3 className="authContent_title">Sign in to Viva</h3>
-          )} */}
           <h3 className="authContent_title">
             Sign {whichSign.slice(-2)} to Viva
           </h3>
@@ -286,12 +543,14 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                           : `eachfiledinputred`
                       }
                       placeholder="John Doe"
-                      onChange={(e) =>
-                        setCurrentUserinfo({
-                          ...currentUserinfo,
-                          fullname: e.target.value,
-                        })
-                      }
+                      // onChange={(e) =>
+                      //   setCurrentUserinfo({
+                      //     ...currentUserinfo,
+                      //     fullname: e.target.value,
+                      //   })
+                      // }
+                      onChange={(e) => handleChange(e)}
+                      name="fullname"
                     />
                     <label
                       htmlFor=""
@@ -311,12 +570,14 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                           : `eachfiledinputred`
                       }
                       placeholder="test@example.com"
-                      onChange={(e) =>
-                        setCurrentUserinfo({
-                          ...currentUserinfo,
-                          email: e.target.value,
-                        })
-                      }
+                      // onChange={(e) =>
+                      //   setCurrentUserinfo({
+                      //     ...currentUserinfo,
+                      //     email: e.target.value,
+                      //   })
+                      // }
+                      onChange={(e) => handleChange(e)}
+                      name="email"
                     />
                     <label
                       htmlFor=""
@@ -336,12 +597,14 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                           : `eachfiledinputred`
                       }
                       placeholder="Your Password"
-                      onChange={(e) =>
-                        setCurrentUserinfo({
-                          ...currentUserinfo,
-                          password: e.target.value,
-                        })
-                      }
+                      // onChange={(e) =>
+                      //   setCurrentUserinfo({
+                      //     ...currentUserinfo,
+                      //     password: e.target.value,
+                      //   })
+                      // }
+                      onChange={(e) => handleChange(e)}
+                      name="password"
                     />
                   </>
                 ) : (
@@ -364,12 +627,14 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                           : `eachfiledinputred`
                       }
                       placeholder="test@example.com"
-                      onChange={(e) =>
-                        setCurrentUserinfo({
-                          ...currentUserinfo,
-                          email: e.target.value,
-                        })
-                      }
+                      // onChange={(e) =>
+                      //   setCurrentUserinfo({
+                      //     ...currentUserinfo,
+                      //     email: e.target.value,
+                      //   })
+                      // }
+                      onChange={(e) => signinHandleChange(e)}
+                      name="email"
                     />
                     <label
                       htmlFor=""
@@ -389,75 +654,116 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                           : `eachfiledinputred`
                       }
                       placeholder="Your Password"
-                      onChange={(e) =>
-                        setCurrentUserinfo({
-                          ...currentUserinfo,
-                          password: e.target.value,
-                        })
-                      }
+                      // onChange={(e) =>
+                      //   setCurrentUserinfo({
+                      //     ...currentUserinfo,
+                      //     password: e.target.value,
+                      //   })
+                      // }
+                      onChange={(e) => signinHandleChange(e)}
+                      name="password"
                     />
                   </>
                 )}
-
-                {/* {userContent.map((eachfield, index) => {
-                  return (
-                    <>
-                      <div className="eachfiledlabel">
-                        {console.log(
-                          "inputValidation",
-                          inputValidation,
-                          "+++",
-                          eachfield,
-                          "---",
-                          eachfield.inputValidation
-                        )}
-                        {eachfield?.warninglabel}
-                      </div>
-                      <input
-                        typesign={eachfield.typesign}
-                        type={eachfield.type}
-                        placeholder={eachfield.placeholder}
-                        className="eachfiledinput"
-                        key={eachfield.type}
-                        onChange={(e) => {
-                          handleinputChange(e);
-                        }}
-                      />
-                    </>
-                  );
-                })} */}
               </div>
               <div className="flexbutton">
                 {whichSign === "signup" ? (
-                  <div className="forgotPassw_butt"></div>
+                  <>
+                    <div className="forgotPassw_butt"></div>
+                  </>
                 ) : (
                   <div className="forgotPassw_butt">Forgot Password?</div>
                 )}
+                {whichSign === "signup" ? (
+                  <>
+                    <form onSubmit={(e) => submit(e)} method="post">
+                      <button
+                        className="signUp"
+                        type="submit"
+                        // onClick={add}
+                      >
+                        Sign Up
+                        <svg
+                          t="1688184809125"
+                          viewBox="0 0 1024 1024"
+                          version="1.1"
+                          xmlns="http://www.w3.org/2000/svg"
+                          p-id="1951"
+                          width="20"
+                          height="20"
+                          className="svgarrowright icon"
+                        >
+                          <path
+                            d="M1024.2048 512c0 6.656-2.4576 13.2608-7.5264 18.2784l-325.8368 325.8368a25.6 25.6 0 1 1-36.1984-36.1984l282.5216-282.5216H25.8048a25.6 25.6 0 1 1 0-51.2h910.9504l-282.112-282.112a25.6 25.6 0 1 1 36.1984-36.1984l325.8368 325.8368c4.608 4.608 7.5264 11.008 7.5264 18.0736V512z"
+                            fill="#ffffff"
+                            p-id="1952"
+                          ></path>
+                        </svg>
+                      </button>
+                      {/* <button type="button" onClick={add}>
+                        add
+                      </button> */}
+                      {/* <button type="button" onClick={getData}>
+                        Get data
+                      </button> */}
+                    </form>
+                  </>
+                ) : (
+                  <>
+                    <form onSubmit={(e) => submitIn(e)} method="post">
+                      <button className="signUp" type="submit">
+                        Sign In
+                        <svg
+                          t="1688184809125"
+                          viewBox="0 0 1024 1024"
+                          version="1.1"
+                          xmlns="http://www.w3.org/2000/svg"
+                          p-id="1951"
+                          width="20"
+                          height="20"
+                          className="svgarrowright icon"
+                        >
+                          <path
+                            d="M1024.2048 512c0 6.656-2.4576 13.2608-7.5264 18.2784l-325.8368 325.8368a25.6 25.6 0 1 1-36.1984-36.1984l282.5216-282.5216H25.8048a25.6 25.6 0 1 1 0-51.2h910.9504l-282.112-282.112a25.6 25.6 0 1 1 36.1984-36.1984l325.8368 325.8368c4.608 4.608 7.5264 11.008 7.5264 18.0736V512z"
+                            fill="#ffffff"
+                            p-id="1952"
+                          ></path>
+                        </svg>
+                      </button>
+                      <button onClick={() => getData}>
+                        Get data sign in page
+                      </button>
+                    </form>
+                  </>
+                )}
 
-                <button
-                  className="signUp"
-                  onClick={() => {
-                    sendinputtoSignup();
-                  }}
-                >
-                  {location.pathname === "/signup" ? "Sign Up" : "Sign In"}
-                  <svg
-                    t="1688184809125"
-                    viewBox="0 0 1024 1024"
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    p-id="1951"
-                    width="20"
-                    height="20"
-                    className="svgarrowright icon"
+                {/* <form onSubmit={(e) => submit(e)} action="" method="post">
+                  <button
+                    className="signUp"
+                    // onClick={() => {
+                    //   sendinputtoSignup();
+                    // }}
+                    type="submit"
                   >
-                    <path
-                      d="M1024.2048 512c0 6.656-2.4576 13.2608-7.5264 18.2784l-325.8368 325.8368a25.6 25.6 0 1 1-36.1984-36.1984l282.5216-282.5216H25.8048a25.6 25.6 0 1 1 0-51.2h910.9504l-282.112-282.112a25.6 25.6 0 1 1 36.1984-36.1984l325.8368 325.8368c4.608 4.608 7.5264 11.008 7.5264 18.0736V512z"
-                      fill="#ffffff"
-                      p-id="1952"
-                    ></path>
-                  </svg>
-                </button>
+                    {location.pathname === "/signup" ? "Sign Up" : "Sign In"}
+                    <svg
+                      t="1688184809125"
+                      viewBox="0 0 1024 1024"
+                      version="1.1"
+                      xmlns="http://www.w3.org/2000/svg"
+                      p-id="1951"
+                      width="20"
+                      height="20"
+                      className="svgarrowright icon"
+                    >
+                      <path
+                        d="M1024.2048 512c0 6.656-2.4576 13.2608-7.5264 18.2784l-325.8368 325.8368a25.6 25.6 0 1 1-36.1984-36.1984l282.5216-282.5216H25.8048a25.6 25.6 0 1 1 0-51.2h910.9504l-282.112-282.112a25.6 25.6 0 1 1 36.1984-36.1984l325.8368 325.8368c4.608 4.608 7.5264 11.008 7.5264 18.0736V512z"
+                        fill="#ffffff"
+                        p-id="1952"
+                      ></path>
+                    </svg>
+                  </button>
+                </form> */}
               </div>
             </div>
             <div className="authContent_line">
@@ -467,9 +773,12 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
             </div>
             <div className="socialmedia">
               <div className="allsocialmediainfo">
-                {socialmedia.map((eachsocialmedia, index) => {
+                {socialmedia?.map((eachsocialmedia, index) => {
                   return (
-                    <div className="userinformation" key={index}>
+                    <div
+                      className="userinformation"
+                      key={eachsocialmedia.cName}
+                    >
                       <div
                         className={eachsocialmedia.cName}
                         id="eachsocialmedia_css"
