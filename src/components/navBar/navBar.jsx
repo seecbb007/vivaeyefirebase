@@ -12,7 +12,11 @@ import Dropdown from "../shoppages/dropdownlist/dropdown";
 import Viewaccount from "../viewaccount/viewaccount";
 import { useSelector, useDispatch } from "react-redux";
 import { setLoginData, setUserInfoData } from "../../actions/loginActions";
+
 import axios from "axios";
+
+import { db } from "../../firebase/config";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Navbar({ shopCard18 }) {
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -67,6 +71,7 @@ export default function Navbar({ shopCard18 }) {
   const UserInfoData = useSelector((state) => {
     return state?.loginReducer?.userInfo;
   });
+
   const shoppingCartListData = useSelector((state) => {
     return state?.shoppingCartReducer?.shoppingCartList;
   });
@@ -113,8 +118,33 @@ export default function Navbar({ shopCard18 }) {
   const handleShopPageClick = () => {
     setProductDispalyList(card18);
   };
+  //firebase
+  // const refId = JSON.parse(localStorage.getItem("_id"));
+  // console.log("refId  000", refId);
+  // useEffect(() => {
+  //   const docRef = doc(db, "users", refId);
+  //   const docSnap = getDoc(docRef);
 
+  //   if (docSnap.exists()) {
+  //     console.log("Document data:", docSnap.data());
+  //   } else {
+  //     // docSnap.data() will be undefined in this case
+  //     console.log("No such document!");
+  //   }
+  // }, [refId]);
+  // const getData = async () => {
+  //   const docRef = doc(db, "users", { refId });
+  //   const docSnap = await getDoc(docRef);
+
+  //   if (docSnap.exists()) {
+  //     console.log("Document data:", docSnap.data());
+  //   } else {
+  //     // docSnap.data() will be undefined in this case
+  //     console.log("No such document!");
+  //   }
+  // };
   // console.log(JSON.parse(localStorage.getItem("fullname")));
+
   return (
     <div>
       <MainContext.Provider value={{ cartStatus, setCartStatus }}>

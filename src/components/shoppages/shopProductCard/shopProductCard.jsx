@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./shopproductcard.css";
 import shopCartContext from "../../../context/shopcartContext";
-import { addItemToShoppingCart } from "../../../apiService";
+// import { addItemToShoppingCart } from "../../../apiService";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import renderGlassImg from "../../../utils/renderGlassImg";

@@ -3,7 +3,6 @@ import { SET_LOGIN_DATA, SET_USERINFO } from "../actions/loginActions";
 function loginReducer(
   state = {
     ifLogedin: false,
-
     userInfo: { fullname: "", email: "" },
   },
   action
