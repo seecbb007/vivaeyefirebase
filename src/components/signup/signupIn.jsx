@@ -191,67 +191,6 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     // console.log("currentLoginUserInfo", currentLoginUserInfo);
   };
 
-  //add data to firebase database
-  // const addUser = async (uid) => {
-  //   try {
-  //     const docRef = await addDoc(collection(db, "users"), {
-  //       fullname: currentUserinfo.fullname,
-  //       email: currentUserinfo.email,
-  //       password: currentUserinfo.password,
-  //       id: uid,
-  //     });
-  //     console.log("Document written with ID: ", docRef.id);
-  //     //sign in
-  //   } catch (e) {
-  //     console.error("Error adding document: ", e);
-  //   }
-  // };
-
-  // const submit = (e) => {
-  // e.preventDefault();
-  // if (
-  //   regfullName.test(currentUserinfo.fullname) === true &&
-  //   regEmail.test(currentUserinfo.email) === true &&
-  //   regPassword.test(currentUserinfo.password) === true
-  // ) {
-  //   const auth = getAuth();
-  //   createUserWithEmailAndPassword(
-  //     auth,
-  //     currentUserinfo.email,
-  //     currentUserinfo.password
-  //   )
-  //     .then((userCredential) => {
-  //       // Sign up
-  //       const user = userCredential.user;
-  //       console.log("sign up user", user);
-
-  //       // Ensure currentUserinfo.fullname is not null or empty
-  //       const displayName =
-  //         currentUserinfo.fullname || "Default Display Name";
-
-  //       return updateProfile(user, {
-  //         displayName: displayName,
-  //       });
-  //     })
-  //     .then(() => {
-  //       // The display name has been updated
-  //       const user = auth.currentUser;
-  //       console.log("User signed up and display name set:", user);
-  //       console.log("User Display Name:", user.displayName);
-
-  //       // You can dispatch or navigate here if needed
-  //     })
-  //     .catch((error) => {
-  //       const errorCode = error.code;
-  //       const errorMessage = error.message;
-  //       console.log("error", errorCode);
-  //       console.log("errorMessage", errorMessage);
-  //     });
-  // } else {
-  //   // Handle invalid input or show an error message
-  // }
-  // };
-
   const signUpAndAddUserToFirestore = async (email, password, fullname) => {
     console.log("see if user info valid", email, password, fullname);
     const auth = getAuth();
@@ -265,7 +204,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       );
       const user = userCredential.user;
 
-      // Set the user's display name
+      // Set the user's display name for authntication
       await updateProfile(user, {
         displayName: fullname,
       });
@@ -371,30 +310,6 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     //     // console.log("app:failure error", error);
     //   });
   };
-  // function getUserData(uid) {
-  //   firebase
-  //     .database()
-  //     .ref("users/" + uid)
-  //     .once("value", (snap) => {
-  //       console.log(snap.val());
-  //     });
-  // }
-
-  // const auth = getAuth();
-  // const collectionRef = collection(database, "users");
-  // onAuthStateChanged(auth, (user) => {
-  //   if (user) {
-  //     // User is signed in, see docs for a list of available properties
-  //     // https://firebase.google.com/docs/reference/js/auth.user
-  //     const uid = user.uid;
-  //     getUserData(user.uid);
-  //     console.log("000", getUserData(user.uid));
-  //     // ...
-  //   } else {
-  //     // User is signed out
-  //     // ...
-  //   }
-  // });
 
   const getData = async () => {
     const docRef = doc(db, "users");
