@@ -16,6 +16,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app); //登录认证
-export const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app); //登录认证
+const db = getFirestore(app);
+
+export { app, db, auth };

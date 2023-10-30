@@ -8,13 +8,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { setLoginData, setUserInfoData } from "../../actions/loginActions";
 //firebase
 
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, getFirestore } from "firebase/firestore";
 import { app, db } from "../../firebase/config";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
+  updateProfile,
 } from "firebase/auth";
 import { getDatabase, ref, get } from "firebase/database";
 import { doc, getDoc } from "firebase/firestore";
@@ -176,39 +177,56 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     [currentUserinfo.fullname, currentUserinfo.email, currentUserinfo.password]
   );
 
-  //get ifSignedin info & userinfo from server
-
   const handleChange = (e) => {
     let title = e.target.name;
     let value = e.target.value;
-    // console.log("title", title);
-    // console.log("value", value);
     setCurrentUserinfo({ ...currentUserinfo, [title]: value });
-    console.log("currentUserinfo", currentUserinfo);
+    // console.log("currentUserinfo", currentUserinfo);
   };
 
   const signinHandleChange = (e) => {
     let title = e.target.name;
     let value = e.target.value;
     setCurrentLoginUserInfo({ ...currentLoginUserInfo, [title]: value });
-    console.log("currentLoginUserInfo", currentLoginUserInfo);
+    // console.log("currentLoginUserInfo", currentLoginUserInfo);
   };
 
-  //add data to firebase database
-  const addUser = async (userinfoId) => {
+  const signUpAndAddUserToFirestore = async (email, password, fullname) => {
+    console.log("see if user info valid", email, password, fullname);
+    const auth = getAuth();
+
     try {
-      const docRef = await addDoc(collection(db, "users"), {
-        fullname: currentUserinfo.fullname,
-        email: currentUserinfo.email,
-        password: currentUserinfo.password,
-        id: userinfoId,
+      // Sign up the user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      // Set the user's display name for authntication
+      await updateProfile(user, {
+        displayName: fullname,
       });
-      console.log("Document written with ID: ", docRef.id);
-      //sign in
-    } catch (e) {
-      console.error("Error adding document: ", e);
+
+      // Add user data to Firestore
+      const db = getFirestore();
+      const usersCollection = collection(db, "users"); // Replace 'users' with your collection name
+      await addDoc(usersCollection, {
+        uid: user.uid,
+        email: user.email,
+        displayName: fullname,
+        // Add any other user data fields you want to store
+      });
+
+      // Return the user object or any other relevant data
+      return user;
+    } catch (error) {
+      console.error("Error signing up and adding user data:", error);
+      throw error; // Rethrow the error for handling in the calling code
     }
   };
+
   const submit = (e) => {
     e.preventDefault();
     if (
@@ -216,126 +234,15 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       regEmail.test(currentUserinfo.email) === true &&
       regPassword.test(currentUserinfo.password) === true
     ) {
-      const auth = getAuth();
-      createUserWithEmailAndPassword(
-        auth,
+      signUpAndAddUserToFirestore(
         currentUserinfo.email,
-        currentUserinfo.password
-      )
-        .then((userCredential) => {
-          // Sign up
-          const user = userCredential.user;
-          console.log("sign up user", user);
-          addUser(user.uid);
-          //dispatch(setUserInfoData(user));
-        })
-        .catch((error) => {
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          console.log("error", errorCode);
-          console.log("errorMessage", errorMessage);
-        });
-
-      // axios
-      //   .post("https://vivaser.onrender.com/api/v1/signup", currentUserinfo)
-      //   .then((res) => {
-      //     let loginUser = {
-      //       email: currentUserinfo.email,
-      //       password: currentUserinfo.password,
-      //     };
-      //     // console.log("code", res.data);
-      //     // console.log("SIGNUPiN", loginUser);
-      //     if (res.data.code === 1) {
-      //       // axios.post("http://127.0.0.1:8080/api/v1/signStatus",ifsigned)
-      //       axios
-      //         .post("https://vivaser.onrender.com/api/v1/signin", loginUser)
-      //         .then((res) => {
-      //           // console.log("fanhui ", res.data);
-      //           navigate("/");
-      //           dispatch(setUserInfoData(res.data?.data));
-      //           // dispatch(setLoginData(true));
-      //           localStorage.setItem("token", JSON.stringify(res.data.token));
-      //           localStorage.setItem(
-      //             "fullname",
-      //             JSON.stringify(res.data.data.fullname)
-      //           );
-      //           localStorage.setItem(
-      //             "email",
-      //             JSON.stringify(res.data.data.email)
-      //           );
-      //         })
-      //         .catch((error) => {
-      //         });
-      //     } else {
-      //     }
-      //   })
-      //   .catch((error) => {
-      //     // console.log("Register Account Fail,Check error: ", error);
-      //   });
+        currentUserinfo.password,
+        currentUserinfo.fullname
+      );
     } else {
+      console.log("Invalid user input infomation");
     }
   };
-
-  // const auth = getAuth();
-  // signInWithEmailAndPassword(
-  //   auth,
-  //   currentUserinfo.email,
-  //   currentUserinfo.password
-  // )
-  //   .then((userCredential) => {
-  //     // Signed in
-  //     const user = userCredential.user;
-  //     localStorage.setItem("token", JSON.stringify(user.accessToken));
-  //     // console.log("docRef.id", docRef.id);
-  //     console.log("sign in", user);
-  //     // const docRefid = doc(db, "users", docRef.id);
-  //     // const docSnap = getDoc(docRefid);
-
-  //     // if (docSnap.exists()) {
-  //     //   console.log("Document data:", docSnap.data());
-  //     //   // const signupFullname = docSnap.data().fullname;
-  //     //   // const email = docSnap.data().email;
-
-  //     //   // const user = { fullname: signupFullname, email: email };
-  //     //   // dispatch(setUserInfoData(user));
-  //     // } else {
-  //     //   // docSnap.data() will be undefined in this case
-  //     //   console.log("No such user document!");
-  //     // }
-  //     navigate("/");
-
-  //     // localStorage.setItem("_id", JSON.stringify(docRef.id));
-
-  //     // ...
-  //   })
-  //   .catch((error) => {
-  //     const errorCode = error.code;
-  //     const errorMessage = error.message;
-  //     console.log("error IN sign in", errorCode);
-  //     console.log("errorMessage sign in", errorMessage);
-  //   });
-  // const getData = async () => {
-  //   const docRef = doc(db, "users", "otDBUYwS9GDT4SMIaznx");
-  //   const docSnap = await getDoc(docRef);
-
-  //   if (docSnap.exists()) {
-  //     console.log("Document data:", docSnap.data());
-  //   } else {
-  //     // docSnap.data() will be undefined in this case
-  //     console.log("No such document!");
-  //   }
-  // };
-
-  ////9909099
-  // const getCurrentUserData = (currentEmail) => {
-  //   getDocs(collectionRef).then((req) => {
-  //     console.log(
-  //       req.docs.map((eachitem) => {
-  //         return { ...eachitem.data(), id: eachitem.id };
-  //       })
-  //     );
-  //   });
-  // };
   const collectionRef = collection(db, "users");
   const getCurrentUserData = (currentEmail) => {
     getDocs(collectionRef).then((req) => {
@@ -346,36 +253,6 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       );
     });
   };
-  function getUserData(uid) {
-    const db = getDatabase();
-    const userRef = ref(db, "users" + uid);
-
-    get(userRef)
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          const userData = snapshot.val();
-          console.log("gggget", userData);
-        } else {
-          console.log("No such user exists");
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching user data:", error);
-      });
-  }
-  const auth = getAuth();
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // User is signed in, see docs for a list of available properties
-      // https://firebase.google.com/docs/reference/js/auth.user
-      const uid = user.uid;
-      getUserData(uid);
-      // ...
-    } else {
-      // User is signed out
-      // ...
-    }
-  });
 
   const submitIn = (e) => {
     e.preventDefault();
@@ -390,40 +267,24 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       .then((userCredential) => {
         // Signed in
         const user = userCredential.user;
-        // const refId = docRef.id;
-        // console.log("aa", auth);
-        // console.log("submitIn user", user);
-        // console.log("userid", user.uid);
-        // console.log("UserImpl", user.accessToken);\
-        getUserData(user.uid);
+
         const auth = getAuth();
-        const users = auth.currentUser;
 
-        if (users) {
-          // User is signed in, see docs for a list of available properties
-          // https://firebase.google.com/docs/reference/js/auth.user
-          const uid = users.uid;
-
-          const providerData = users.providerData;
-          const tenantId = users.tenantId;
-          console.log("onchange", users);
-          console.log("providerData", providerData);
-          console.log("tenantId", tenantId);
-          // ...
-        } else {
-          // User is signed out
-          // ...
-        }
-
-        // getCurrentUserData(currentLoginUserInfo.email);
+        console.log("In submitIn success", user);
+        dispatch(setLoginData(true));
+        dispatch(
+          setUserInfoData({
+            fullname: user.displayName,
+            email: user.email,
+          })
+        );
         navigate("/");
-        // ...
       })
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
-        console.log("error sign in", errorCode);
-        console.log("errorMessage sign in", errorMessage);
+        console.log("error sign in", error);
+        console.log("errorMessage sign in", error);
       });
     // axios
     //   .post("https://vivaser.onrender.com/api/v1/signin", currentLoginUserInfo)
@@ -449,30 +310,6 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     //     // console.log("app:failure error", error);
     //   });
   };
-  // function getUserData(uid) {
-  //   firebase
-  //     .database()
-  //     .ref("users/" + uid)
-  //     .once("value", (snap) => {
-  //       console.log(snap.val());
-  //     });
-  // }
-
-  // const auth = getAuth();
-  // const collectionRef = collection(database, "users");
-  // onAuthStateChanged(auth, (user) => {
-  //   if (user) {
-  //     // User is signed in, see docs for a list of available properties
-  //     // https://firebase.google.com/docs/reference/js/auth.user
-  //     const uid = user.uid;
-  //     getUserData(user.uid);
-  //     console.log("000", getUserData(user.uid));
-  //     // ...
-  //   } else {
-  //     // User is signed out
-  //     // ...
-  //   }
-  // });
 
   const getData = async () => {
     const docRef = doc(db, "users");
