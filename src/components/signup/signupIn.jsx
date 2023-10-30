@@ -181,7 +181,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     let title = e.target.name;
     let value = e.target.value;
     setCurrentUserinfo({ ...currentUserinfo, [title]: value });
-    // console.log("currentUserinfo", currentUserinfo);
+    console.log("currentUserinfo", currentUserinfo);
   };
 
   const signinHandleChange = (e) => {
@@ -194,7 +194,6 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
   const signUpAndAddUserToFirestore = async (email, password, fullname) => {
     console.log("see if user info valid", email, password, fullname);
     const auth = getAuth();
-
     try {
       // Sign up the user
       const userCredential = await createUserWithEmailAndPassword(
@@ -216,6 +215,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
         uid: user.uid,
         email: user.email,
         displayName: fullname,
+        password: password,
         // Add any other user data fields you want to store
       });
 
@@ -234,11 +234,20 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       regEmail.test(currentUserinfo.email) === true &&
       regPassword.test(currentUserinfo.password) === true
     ) {
-      signUpAndAddUserToFirestore(
-        currentUserinfo.email,
-        currentUserinfo.password,
-        currentUserinfo.fullname
-      );
+      (async function () {
+        try {
+          await signUpAndAddUserToFirestore(
+            currentUserinfo.email,
+            currentUserinfo.password,
+            currentUserinfo.fullname
+          );
+
+          submitIn(currentUserinfo.email, currentUserinfo.password);
+        } catch (error) {
+          console.error("Error during signup or signin:", error);
+        }
+      })();
+      //end
     } else {
       console.log("Invalid user input infomation");
     }
@@ -253,23 +262,16 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       );
     });
   };
-
-  const submitIn = (e) => {
-    e.preventDefault();
+  const submitIn = (email, password) => {
     //后端接user数据，后端返回响应
     const auth = getAuth();
-
-    signInWithEmailAndPassword(
-      auth,
-      currentLoginUserInfo.email,
-      currentLoginUserInfo.password
-    )
+    console.log("eee", email);
+    console.log("e Pppp", password);
+    signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // Signed in
         const user = userCredential.user;
-
         const auth = getAuth();
-
         console.log("In submitIn success", user);
         dispatch(setLoginData(true));
         dispatch(
@@ -309,6 +311,16 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     //   .catch((error) => {
     //     // console.log("app:failure error", error);
     //   });
+  };
+
+  const handleSubmitIn = (e) => {
+    e.preventDefault();
+    submitIn(currentLoginUserInfo.email, currentLoginUserInfo.password);
+    console.log(
+      "current",
+      currentLoginUserInfo.email,
+      currentLoginUserInfo.password
+    );
   };
 
   const getData = async () => {
@@ -547,7 +559,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                   </>
                 ) : (
                   <>
-                    <form onSubmit={(e) => submitIn(e)} method="post">
+                    <form onSubmit={(e) => handleSubmitIn(e)} method="post">
                       <button className="signUp" type="submit">
                         Sign In
                         <svg
