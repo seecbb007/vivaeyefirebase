@@ -209,3 +209,8 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+
+.filterbutt {
+  width: 8rem;
+  height: 2.5rem;
+}

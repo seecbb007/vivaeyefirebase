@@ -8,7 +8,8 @@ function ProductsReducer(
 ) {
   switch (action.type) {
     case SET_PRODUCTS:
-      return { ...action.payload };
+      return { ...state, allglassesProducts: action.payload };
+    //[...action.payload];
     default:
       return state;
   }

@@ -181,7 +181,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     let title = e.target.name;
     let value = e.target.value;
     setCurrentUserinfo({ ...currentUserinfo, [title]: value });
-    console.log("currentUserinfo", currentUserinfo);
+    //console.log("currentUserinfo", currentUserinfo);
   };
 
   const signinHandleChange = (e) => {
@@ -226,53 +226,17 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       throw error; // Rethrow the error for handling in the calling code
     }
   };
-
-  const submit = (e) => {
-    e.preventDefault();
-    if (
-      regfullName.test(currentUserinfo.fullname) === true &&
-      regEmail.test(currentUserinfo.email) === true &&
-      regPassword.test(currentUserinfo.password) === true
-    ) {
-      (async function () {
-        try {
-          await signUpAndAddUserToFirestore(
-            currentUserinfo.email,
-            currentUserinfo.password,
-            currentUserinfo.fullname
-          );
-
-          submitIn(currentUserinfo.email, currentUserinfo.password);
-        } catch (error) {
-          console.error("Error during signup or signin:", error);
-        }
-      })();
-      //end
-    } else {
-      console.log("Invalid user input infomation");
-    }
-  };
-  const collectionRef = collection(db, "users");
-  const getCurrentUserData = (currentEmail) => {
-    getDocs(collectionRef).then((req) => {
-      console.log(
-        req.docs.map((eachitem) => {
-          return { ...eachitem.data(), id: eachitem.id };
-        })
-      );
-    });
-  };
   const submitIn = (email, password) => {
-    //后端接user数据，后端返回响应
     const auth = getAuth();
-    console.log("eee", email);
-    console.log("e Pppp", password);
+    console.log("eeemail", email);
+    console.log("Ppppassword", password);
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // Signed in
         const user = userCredential.user;
         const auth = getAuth();
         console.log("In submitIn success", user);
+
         dispatch(setLoginData(true));
         dispatch(
           setUserInfoData({
@@ -280,6 +244,9 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
             email: user.email,
           })
         );
+        const userInfo = { fullname: user.displayName, email: user.email };
+        localStorage.setItem("token", JSON.stringify(user.accessToken));
+        localStorage.setItem("userinfo", JSON.stringify(userInfo));
         navigate("/");
       })
       .catch((error) => {
@@ -312,6 +279,41 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
     //     // console.log("app:failure error", error);
     //   });
   };
+  const submit = (e) => {
+    e.preventDefault();
+    if (
+      regfullName.test(currentUserinfo.fullname) === true &&
+      regEmail.test(currentUserinfo.email) === true &&
+      regPassword.test(currentUserinfo.password) === true
+    ) {
+      (async function () {
+        try {
+          await signUpAndAddUserToFirestore(
+            currentUserinfo.email,
+            currentUserinfo.password,
+            currentUserinfo.fullname
+          );
+
+          submitIn(currentUserinfo.email, currentUserinfo.password);
+        } catch (error) {
+          console.error("Error during signup or signin:", error);
+        }
+      })();
+      //end
+    } else {
+      console.log("Invalid user input infomation");
+    }
+  };
+  // const collectionRef = collection(db, "users");
+  // const getCurrentUserData = (currentEmail) => {
+  //   getDocs(collectionRef).then((req) => {
+  //     console.log(
+  //       req.docs.map((eachitem) => {
+  //         return { ...eachitem.data(), id: eachitem.id };
+  //       })
+  //     );
+  //   });
+  // };
 
   const handleSubmitIn = (e) => {
     e.preventDefault();
@@ -578,9 +580,6 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
                             p-id="1952"
                           ></path>
                         </svg>
-                      </button>
-                      <button onClick={() => getData}>
-                        Get data sign in page
                       </button>
                     </form>
                   </>

@@ -126,7 +126,7 @@ export default function SimplePopper({ shopCard18 }) {
         aria-describedby={id}
         type="button"
         onClick={handleClick}
-        className="filterbutt"
+        className="filterbutts"
       >
         Filters
       </button>

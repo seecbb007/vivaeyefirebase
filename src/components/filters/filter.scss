@@ -1,7 +1,17 @@
-.filterbutt {
+.filterbutts {
   height: 40px;
   width: 80px;
   margin-right: 20px;
+  border-radius: 5px;
+  background: #f2f2f2;
+  color: #7d7d7d;
+  border: 1px solid #e1e1e1;
+  transition: 1.3s all;
+  &:hover {
+    cursor: pointer;
+    background: white;
+    border: 1px solid #7d7d7d;
+  }
 }
 .popper {
   position: absolute;

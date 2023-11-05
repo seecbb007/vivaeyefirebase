@@ -7,6 +7,23 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import renderGlassImg from "../../../utils/renderGlassImg";
 import { setCurrentShoppingCartList } from "../../../actions/shoppingCartAction";
+import { persistReducer, persistStore } from "redux-persist";
+import storage from "redux-persist/lib/storage";
+
+//firebase
+import { app, db } from "../../../firebase/config";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import fetchShoppingCartData from "../../../utils/fireBaseAPI";
 
 export default function ShopProductCard({
   img,
@@ -28,21 +45,69 @@ export default function ShopProductCard({
   const [selectedFrameSize, setSelectedFrameSize] = useState("36 mm");
   const dispatch = useDispatch();
 
-  const handleAddToBasket = () => {
-    // setShoppingCartList([
-    //   ...shoppingCartList,
-    //   {
-    //     img,
-    //     title,
-    //     subtitle,
-    //     price,
-    //     itemNumber,
-    //     addedInCart,
-    //     colors,
-    //     framesize,
-    //     quantity: quantity + 1,
-    //   },
-    // ]);
+  //  const handleAddToBasket = async () => {
+  // setShoppingCartList([
+  //   ...shoppingCartList,
+  //   {
+  //     img,
+  //     title,
+  //     subtitle,
+  //     price,
+  //     itemNumber,
+  //     addedInCart,
+  //     colors,
+  //     framesize,
+  //     quantity: quantity + 1,
+  //   },
+  // ]);
+  //   const item = {
+  //     img,
+  //     title,
+  //     subtitle,
+  //     price,
+  //     itemNumber,
+  //     addedInCart,
+  //     colors,
+  //     framesize,
+  //     quantity: quantity + 1,
+  //   };
+  //   // axios
+  //   //   .post("https://vivaser.onrender.com/api/v1/shop", item)
+  //   //   .then((res) => {
+  //   //     // console.log("iii", item);
+  //   //     // console.log("add to shopping cart api response", res.data.data);
+
+  //   //     // setShoppingCartList(res.data);
+  //   //     axios
+  //   //       .get("https://vivaser.onrender.com/api/v1/shop")
+  //   //       .then((res) => {
+  //   //         // console.log("Get shoppingCartList data", res.data.data);
+  //   //         dispatch(setCurrentShoppingCartList(res.data.data));
+  //   //       })
+  //   //       .catch((error) => {
+  //   //         // console.log("get shop item fail", error);
+  //   //       });
+  //   //   })
+  //   //   .catch((error) => {
+  //   //     // console.log("addItem Failed", error);
+  //   //   });
+
+  //   // Shopping Cart: Add glasses data to Firestore
+  //   try {
+  //     const db = getFirestore();
+  //     const glassesCollection = collection(db, "glassesInTheShopCart");
+  //     await addDoc(glassesCollection, {
+  //       item,
+  //     });
+  //     console.log("iiiiitem", item);
+  //     dispatch(setCurrentShoppingCartList(item));
+  //     return item;
+  //   } catch (error) {
+  //     console.error("Error in Adding Glasses to Shopping Cart", error);
+  //     throw error;
+  //   }
+  // };
+  const handleAddToBasket = async () => {
     const item = {
       img,
       title,
@@ -54,66 +119,95 @@ export default function ShopProductCard({
       framesize,
       quantity: quantity + 1,
     };
-    axios
-      .post("https://vivaser.onrender.com/api/v1/shop", item)
-      .then((res) => {
-        // console.log("iii", item);
-        // console.log("add to shopping cart api response", res.data.data);
 
-        // setShoppingCartList(res.data);
-        axios
-          .get("https://vivaser.onrender.com/api/v1/shop")
-          .then((res) => {
-            // console.log("Get shoppingCartList data", res.data.data);
-            dispatch(setCurrentShoppingCartList(res.data.data));
-          })
-          .catch((error) => {
-            // console.log("get shop item fail", error);
-          });
-      })
-      .catch((error) => {
-        // console.log("addItem Failed", error);
-      });
+    try {
+      const db = getFirestore();
+      const glassesCollection = collection(db, "glassesInTheShopCart");
+      // Create a query against the collection to find an item with the same itemNumber
+      const queryRef = query(
+        glassesCollection,
+        where("item.itemNumber", "==", itemNumber)
+      );
+      // Execute the query
+      const querySnapshot = await getDocs(queryRef);
+      // If the querySnapshot is empty, no item exists with the same itemNumber; you can add a new item
+      if (querySnapshot.empty) {
+        await addDoc(glassesCollection, { item });
+        console.log("Item added to shopping cart:", item);
+
+        return item;
+      } else {
+        console.log(
+          "Item with the same itemNumber already exists in the shopping cart."
+        );
+        // Handle the case where the item already exists, perhaps by updating its quantity
+        // if that's the desired behavior.
+      }
+    } catch (error) {
+      console.error("Error in Adding Glasses to Shopping Cart", error);
+      throw error;
+    }
   };
-
-  const handleRemovefromBasket = () => {
+  const handleRemovefromBasket = async () => {
     // const newList = shoppingCartList.filter((eachProduct) => {
     //   return eachProduct.itemNumber !== itemNumber;
     // });
+    // console.log("newList", newList);
     // setShoppingCartList(newList);
-    let itemNumbernum = { itemNumber };
-    axios
-      .post(
-        "https://vivaser.onrender.com/api/v1/shopproductCardDelete",
-        itemNumbernum
-      )
-      .then((res) => {
-        // console.log("shopProductCardDelete", res.data);
-        // console.log("remove item", itemNumber);
-        axios
-          .get("https://vivaser.onrender.com/api/v1/shop")
-          .then((res) => {
-            // console.log("Get shoppingCartList data", res.data.data);
-            dispatch(setCurrentShoppingCartList(res.data.data));
-          })
-          .catch((error) => {
-            // console.log("get shop item fail", error);
-          });
-      })
-      .catch((error) => {
-        // console.log("Fail to remove item", error);
-      });
+    let itemNumber = { itemNumber };
+    // axios
+    //   .post(
+    //     "https://vivaser.onrender.com/api/v1/shopproductCardDelete",
+    //     itemNumbernum
+    //   )
+    //   .then((res) => {
+    //     // console.log("shopProductCardDelete", res.data);
+    //     // console.log("remove item", itemNumber);
+    //     axios
+    //       .get("https://vivaser.onrender.com/api/v1/shop")
+    //       .then((res) => {
+    //         // console.log("Get shoppingCartList data", res.data.data);
+    //         dispatch(setCurrentShoppingCartList(res.data.data));
+    //       })
+    //       .catch((error) => {
+    //         // console.log("get shop item fail", error);
+    //       });
+    //   })
+    //   .catch((error) => {
+    //     // console.log("Fail to remove item", error);
+    //   });
+
+    //Remove glasses from firebase database
+    const db = getFirestore();
+
+    try {
+      // Use a query to find the document with the given itemNumber
+      const glassesCollection = collection(db, "glassesInTheShopCart");
+      const q = query(glassesCollection, where("itemNumber", "==", itemNumber));
+      const querySnapshot = await getDocs(q);
+
+      // If the item exists based on itemNumber, delete it
+      if (!querySnapshot.empty) {
+        const itemDoc = querySnapshot.docs[0];
+        await deleteDoc(doc(db, "glassesInTheShopCart", itemDoc.id));
+        console.log("Item deleted successfully!");
+      } else {
+        console.log("Item not found!");
+      }
+    } catch (error) {
+      console.error("Error deleting the item", error);
+    }
   };
 
   const shoppingCartData = useSelector((state) => {
     return state?.shoppingCartReducer?.shoppingCartList;
   });
-  // console.log("shopProductCard", shoppingCartData);
+  //console.log("shopProductCard", shoppingCartData);
   const ifItemInCart =
     shoppingCartData.filter((eachItem) => {
       return eachItem.itemNumber === itemNumber;
     })?.length === 1;
-  // console.log("ifItemInCart", ifItemInCart);
+  //console.log("ifItemInCart", ifItemInCart);
   return (
     <>
       {ifItemInCart ? (

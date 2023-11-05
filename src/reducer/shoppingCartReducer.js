@@ -5,8 +5,7 @@ function shoppingCartReducer(state = { shoppingCartList: [] }, action) {
   switch (action.type) {
     case SET_CURRENT_SHOPPING_CART_LIST:
       return {
-        ...state,
-        shoppingCartList: action.payload,
+        shoppingCartList: [...state.shoppingCartList, action.payload],
       };
     default:
       return state;

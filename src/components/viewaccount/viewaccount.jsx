@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import goldenAvatar from "../../assest/goldenavatar.jpg";
 import "./viewaccount.css";
 import userBackground from "../../assest/userbackground.jpg";
+import { useSelector, useDispatch } from "react-redux";
+import { setLoginData, setUserInfoData } from "../../actions/loginActions";
 
 export default function Viewaccount() {
   const [usertabs, setUserTabs] = useState([
@@ -14,7 +16,9 @@ export default function Viewaccount() {
     wishListClassName: "elementHidden",
     ordersClassName: "elementHidden",
   });
-
+  const UserInfoData = useSelector((state) => {
+    return state?.loginReducer?.userInfo;
+  });
   const handleTabClick = (e) => {
     if (e.target.id === "accounttab") {
       setClassNameList({
@@ -93,11 +97,13 @@ export default function Viewaccount() {
             <div className="view_bottom">
               <div className={classNameList.accountClassName}>
                 <div className="details_answer userName">
-                  {JSON.parse(localStorage.getItem("token")).fullname}
+                  {UserInfoData?.fullname}
+                  {/* {JSON.parse(localStorage.getItem("token")).fullname} */}
                 </div>
                 <div className="details_title">Email</div>
                 <h5 className="details_answer">
-                  {JSON.parse(localStorage.getItem("email"))}
+                  {UserInfoData?.email}
+                  {/* {JSON.parse(localStorage.getItem("email"))} */}
                 </h5>
                 <div className="details_title">Address</div>
                 <h5

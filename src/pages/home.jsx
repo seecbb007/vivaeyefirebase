@@ -9,7 +9,7 @@ export default function Home({ productsInfo }) {
     return eachitem.featured === true;
   });
 
-  //RecommendedProduct 页面上的数据
+  // //RecommendedProduct 页面上的数据
   const RecommendedProduct = productsInfo?.filter((eachitem) => {
     return eachitem.recommended === true;
   });

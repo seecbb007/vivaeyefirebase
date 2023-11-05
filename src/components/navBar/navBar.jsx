@@ -17,7 +17,7 @@ import axios from "axios";
 
 import { db } from "../../firebase/config";
 import { doc, getDoc } from "firebase/firestore";
-
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 export default function Navbar({ shopCard18 }) {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [navBarHeight, setNavBarHeight] = useState(150);
@@ -62,16 +62,59 @@ export default function Navbar({ shopCard18 }) {
   //     });
 
   // },[])
+  useEffect(() => {
+    if (localStorage.getItem("token") !== null) {
+      dispatch(setLoginData(true));
+    }
+  }, []);
 
   const ifLogedin = useSelector((state) => {
     return state?.loginReducer?.ifLogedin;
   });
-  const logInStatus = localStorage.getItem("token");
-  // console.log("loged", loged);
+  useEffect(() => {
+    if (localStorage.getItem("userinfo") !== null) {
+      const userinfo = JSON.parse(localStorage.getItem("userinfo"));
+      dispatch(
+        setUserInfoData({
+          fullname: userinfo.fullname,
+          email: userinfo.email,
+        })
+      );
+    }
+  }, []);
+  // console.log("fullname", JSON.parse(localStorage.getItem("userinfo")).count);
+
   const UserInfoData = useSelector((state) => {
     return state?.loginReducer?.userInfo;
   });
+  //console.log("UserInfoData", UserInfoData);
+  // const [shoppingCartData, setShoppingCartData] = useState([]);
+  // useEffect(() => {
+  //   const fetchGlassesInTheShopCart = async () => {
+  //     try {
+  //       const db = getFirestore();
+  //       const glassesCollectionRef = collection(db, "glassesInTheShopCart");
+  //       const querySnapshot = await getDocs(glassesCollectionRef);
 
+  //       // querySnapshot.forEach((doc) => {
+  //       //   shoppingCartData.push({ item: doc.data() });
+  //       //   //shoppingCartData.push(...doc.data());
+  //       // });
+  //       const items = querySnapshot.docs.map((doc) => {
+  //         const data = doc.data();
+  //         return data.item; // 假设每个文档都有一个 'item' 字段
+  //       });
+  //       console.log("items", items);
+  //       //  dispatch(setCurrentShoppingCartList(items));
+  //       setShoppingCartData(items);
+  //       //console.log("items", items);
+  //       // Set the state
+  //     } catch (error) {
+  //       console.error("Error fetching glasses from the shop cart:", error);
+  //     }
+  //     fetchGlassesInTheShopCart();
+  //   };
+  // }, [shoppingCartData]);
   const shoppingCartListData = useSelector((state) => {
     return state?.shoppingCartReducer?.shoppingCartList;
   });
@@ -81,9 +124,9 @@ export default function Navbar({ shopCard18 }) {
   const handleSignout = () => {
     // dispatch(setLoginData(false));
     dispatch(setUserInfoData(""));
+    dispatch(setLoginData(false));
     localStorage.removeItem("token", "");
-    localStorage.removeItem("fullname", "");
-    localStorage.removeItem("email", "");
+    localStorage.removeItem("userinfo", "");
   };
 
   function onScroll() {
@@ -187,7 +230,7 @@ export default function Navbar({ shopCard18 }) {
               {location.pathname === "/shop" ? (
                 <Filterpopper shopCard18={shopCard18} />
               ) : (
-                ""
+                <div></div>
               )}
             </div>
             <div className="search">
@@ -260,8 +303,8 @@ export default function Navbar({ shopCard18 }) {
                 <div className="addNumber"> {itemInCart_length}</div>
               )}
             </div>
-            {logInStatus?.length > 0 ? (
-              // === true
+            {ifLogedin === true ? (
+              //?.length > 0 ?
               <div className="ifSignedContainer">
                 <div
                   className="ifsigned_true"
@@ -270,8 +313,8 @@ export default function Navbar({ shopCard18 }) {
                   }
                 >
                   <div className="signupInfo_Name">
-                    {/* {UserInfoData?.fullname} */}
-                    {JSON.parse(localStorage.getItem("fullname"))}
+                    {UserInfoData?.fullname}
+                    {/* {JSON.parse(localStorage.getItem("fullname"))} */}
                   </div>
                   <div className="signupInfo_Name"></div>
                   <div className="goldenAvatar">

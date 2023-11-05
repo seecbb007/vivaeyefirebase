@@ -7,23 +7,103 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import signContext from "../../context/signContext";
 import { useSelector, useDispatch } from "react-redux";
 import { setLoginData, setUserInfoData } from "../../actions/loginActions";
-import { setCurrentShoppingCartList } from "../../actions/shoppingCartAction";
+import { fetchShoppingCart } from "../../actions/shoppingCartAction";
+import { fetchDataFromFirestore } from "../../actions/firestoreAction";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import Button from "@mui/material/Button";
 import axios from "axios";
+import { app, db } from "../../firebase/config";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  onSnapshot,
+} from "firebase/firestore";
+
+import getItemInShoppingCart from "../../utils/fireBaseAPI";
+import { getGlassesAndDocuments } from "../../utils/fireBaseAPI";
 
 export default function Shoppingcart({ handleShoppingCartClick }) {
   //get data from redux reducer
   const dispatch = useDispatch();
+  // useEffect(() => {
+  //   const getGlassesData = async () => {
+  //     const shoppingCartGlassesMap = await getGlassesAndDocuments();
+  //     console.log(shoppingCartGlassesMap);
+  //   };
+  //   getGlassesData();
+  // }, []);
   // const ifLogedin = useSelector((state) => {
   //   // console.log("shoppingcart", state?.loginReducer);
   //   return state?.loginReducer?.ifLogedin;
   // });
-  const ifLogedin = localStorage.getItem("token");
-  const shoppingCartData = useSelector((state) => {
-    return state?.shoppingCartReducer?.shoppingCartList;
+
+  // const fetchDataFromFirestore = async () => {
+  //   try {
+  //     // Reference to Firestore and the specific collection
+  //     const db = getFirestore();
+  //     const glassesCollection = collection(db, "glassesInTheShopCart");
+
+  //     // Fetch all documents from the collection
+  //     const glassesSnapshot = await getDocs(glassesCollection);
+
+  //     // Map through each document and transform the snapshot data to an array of items
+  //     const glassesList = glassesSnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data().item,
+  //     }));
+
+  //     return glassesList;
+  //   } catch (error) {
+  //     console.error("Error in Fetching Glasses from Shopping Cart", error);
+  //     throw error;
+  //   }
+  // };
+  const [shoppingCartData, setShoppingCartData] = useState([]);
+
+  // const fetchGlassesInTheShopCart = async () => {
+  //   try {
+  //     const db = getFirestore();
+  //     const glassesCollectionRef = collection(db, "glassesInTheShopCart");
+  //     const querySnapshot = await getDocs(glassesCollectionRef);
+
+  //     // querySnapshot.forEach((doc) => {
+  //     //   shoppingCartData.push({ item: doc.data() });
+  //     //   //shoppingCartData.push(...doc.data());
+  //     // });
+  //     const items = querySnapshot.docs.map((doc) => {
+  //       const data = doc.data();
+  //       return data.item; // 假设每个文档都有一个 'item' 字段
+  //     });
+
+  //     // setShoppingCartData(items); // Set the state
+  //   } catch (error) {
+  //     console.error("Error fetching glasses from the shop cart:", error);
+  //   }
+  // };
+
+  useEffect(() => {
+    fetchDataFromFirestore();
+  }, []);
+
+  // Call the function to fetch the data
+
+  //  handleDataFetching();
+  // useEffect(() => {
+  //   dispatch(setCurrentShoppingCartList(glassesList));
+  // }, []);
+
+  const shoppingCartDataFromRedux = useSelector((state) => {
+    return state?.firebaseReducer;
   });
+
+  //console.log("shoppingCartDataFromRedux", shoppingCartDataFromRedux);
+
+  const ifLogedin = localStorage.getItem("token");
+  useEffect(() => {}, []);
+
   // console.log("111shoppingCartData", shoppingCartData);
 
   const [totalprice, setTotalPrice] = useState([]);
@@ -81,7 +161,7 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
           .get("https://vivaser.onrender.com/api/v1/shop")
           .then((res) => {
             // console.log("Empty whole list", res.data.data);
-            dispatch(setCurrentShoppingCartList(res.data.data));
+            // dispatch(setCurrentShoppingCartList(res.data.data));
           })
           .catch((error) => {
             console.log("faile to empty", error);

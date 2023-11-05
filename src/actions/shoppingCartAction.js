@@ -6,3 +6,8 @@ export const setCurrentShoppingCartList = (data) => {
     payload: data,
   };
 };
+
+const fetchDataSuccess = (data) => ({
+  type: SET_CURRENT_SHOPPING_CART_LIST,
+  payload: data,
+});

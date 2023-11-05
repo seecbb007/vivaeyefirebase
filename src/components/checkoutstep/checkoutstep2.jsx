@@ -40,6 +40,11 @@ export default function CheckoutStep2() {
     shippingCost,
     setShippingCost,
   } = useContext(shopCartContext);
+
+  const UserInfoData = useSelector((state) => {
+    return state?.loginReducer?.userInfo;
+  });
+
   const itemInCart = shoppingCartData;
   //get total price
   const subtotalPriceList = itemInCart?.map((eachitem) => {
@@ -141,8 +146,8 @@ export default function CheckoutStep2() {
                     <TextField
                       id="outlined-size-small"
                       defaultValue={
-                        // userInfoData?.fullname
-                        JSON.parse(localStorage.getItem("fullname"))
+                        userInfoData?.fullname
+                        // JSON.parse(localStorage.getItem("fullname"))
                       }
                       size="medium"
                       sx={{
@@ -159,13 +164,12 @@ export default function CheckoutStep2() {
                       padding: "1px solid #c5c5c5!important",
                     }}
                   >
-                    {" "}
                     <div className="shippinginfo">*Email Address</div>
                     <TextField
                       id="outlined-size-small"
                       defaultValue={
-                        JSON.parse(localStorage.getItem("email"))
-                        // userInfoData?.email
+                        //JSON.parse(localStorage.getItem("email"))
+                        userInfoData?.email
                       }
                       size="medium"
                       sx={{
