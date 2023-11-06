@@ -18,8 +18,17 @@ import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Checkbox from "@mui/material/Checkbox";
 import FormGroup from "@mui/material/FormGroup";
+
 import FormControlLabel from "@mui/material/FormControlLabel";
 
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  onSnapshot,
+  writeBatch,
+} from "firebase/firestore";
 const steps = ["Order Summary", "Shopping Detials", "Payment"];
 const label = { inputProps: { "aria-label": "Checkbox demo" } };
 
@@ -54,25 +63,47 @@ export default function CheckoutStep3() {
     return Object.keys(completed)?.length;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // setShoppingCartList([]);
-    axios
-      .post("https://vivaser.onrender.com/api/v1/shopproductCardDeleteAll")
-      .then((res) => {
-        // console.log("Empty shopping cart", res.data);
-        axios
-          .get("https://vivaser.onrender.com/api/v1/shop")
-          .then((res) => {
-            // console.log("Empty whole list", res.data.data);
-            dispatch(setCurrentShoppingCartList(res.data.data));
-          })
-          .catch((error) => {
-            console.log("faile to empty", error);
-          });
-      })
-      .catch((error) => {
-        console.log("Failed to empty shopping cart", error);
+    // axios
+    //   .post("https://vivaser.onrender.com/api/v1/shopproductCardDeleteAll")
+    //   .then((res) => {
+    //     // console.log("Empty shopping cart", res.data);
+    //     axios
+    //       .get("https://vivaser.onrender.com/api/v1/shop")
+    //       .then((res) => {
+    //         // console.log("Empty whole list", res.data.data);
+    //         dispatch(setCurrentShoppingCartList(res.data.data));
+    //       })
+    //       .catch((error) => {
+    //         console.log("faile to empty", error);
+    //       });
+    //   })
+    //   .catch((error) => {
+    //     console.log("Failed to empty shopping cart", error);
+    //   });
+    const db = getFirestore();
+    const glassesCollection = collection(db, "glassesInTheShopCart");
+
+    try {
+      // Retrieve all documents from the collection
+      const snapshot = await getDocs(glassesCollection);
+
+      // Prepare a batch to delete all documents
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
       });
+
+      // Commit the batch
+      await batch.commit();
+      // console.log("All items in the shopping cart have been cleared.");
+
+      // Dispatch an action to clear the shopping cart in the Redux store, if needed
+      dispatch(setCurrentShoppingCartList([]));
+    } catch (error) {
+      console.error("Error clearing the shopping cart", error);
+    }
   };
 
   const handleComplete = () => {

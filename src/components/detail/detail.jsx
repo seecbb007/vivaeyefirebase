@@ -14,7 +14,20 @@ import Products from "../products/products";
 import { useParams, Link } from "react-router-dom";
 import shopCartContext from "../../context/shopcartContext";
 import { useSelector } from "react-redux/es/hooks/useSelector";
-
+//firebase
+import { app, db } from "../../firebase/config";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  setDoc,
+} from "firebase/firestore";
 import renderGlassImg from "../../utils/renderGlassImg";
 
 export default function Productdetail({ productsInfo }) {
@@ -47,80 +60,338 @@ export default function Productdetail({ productsInfo }) {
       return eachcard;
     }
   })[0];
-  // console.log("currentParamsId_Card", currentParamsId_Card);
+  //console.log("currentParamsId_Card", currentParamsId_Card);
   let itemNumber = currentParamsId_Card?.itemNumber;
 
-  const handleAddtoCart = () => {
-    // setShoppingCartList([
-    //   ...shoppingCartList,
-    //   {
-    //     ...currentParamsId_Card,
-    //     quantity: currentParamsId_Card.quantity + 1,
-    //     addedInCart: true,
-    //     selectedColor: selectedColor,
-    //     selectedFrameSize: selectedFrameSize,
-    //   },
-    // ]);
+  // const handleAddtoCart = () => {
+  //   const currentParamsId_Cardinfo = {
+  //     ...currentParamsId_Card,
+  //     quantity: currentParamsId_Card.quantity + 1,
+  //     selectedColor: selectedColor,
+  //     selectedFrameSize: selectedFrameSize,
+  //   };
+  //   // axios
+  //   //   .post(
+  //   //     "https://vivaser.onrender.com/api/v1/shop",
+  //   //     currentParamsId_Cardinfo
+  //   //   )
+  //   //   .then((res) => {
+  //   //     // console.log("46464", currentParamsId_Cardinfo);
+  //   //     // console.log("iii", item);
+  //   //     // console.log("DETAIL:add to shopping cart", res.data.data);
+
+  //   //     // setShoppingCartList(res.data);
+  //   //     axios
+  //   //       .get("https://vivaser.onrender.com/api/v1/shop")
+  //   //       .then((res) => {
+  //   //         // console.log("Get shoppingCartList data", res.data.data);
+  //   //         dispatch(setCurrentShoppingCartList(res.data.data));
+  //   //       })
+  //   //       .catch((error) => {
+  //   //         // console.log("get shop item fail", error);
+  //   //       });
+  //   //   })
+  //   //   .catch((error) => {
+  //   //     console.log("DETAIL:addItem Failed", error);
+  //   //   });
+  // };
+  // ---- firebase
+  // const handleAddtoCart = async () => {
+  //   const item = {
+  //     img,
+  //     title,
+  //     subtitle,
+  //     price,
+  //     itemNumber,
+  //     addedInCart,
+  //     colors,
+  //     framesize,
+  //     quantity: quantity + 1,
+  //   };
+
+  //   try {
+  //     const db = getFirestore();
+  //     const glassesCollection = collection(db, "glassesInTheShopCart");
+  //     // Create a query against the collection to find an item with the same itemNumber
+  //     const queryRef = query(
+  //       glassesCollection,
+  //       where("item.itemNumber", "==", itemNumber)
+  //     );
+  //     // Execute the query
+  //     const querySnapshot = await getDocs(queryRef);
+  //     // If the querySnapshot is empty, no item exists with the same itemNumber; you can add a new item
+  //     if (querySnapshot.empty) {
+  //       await addDoc(glassesCollection, { item });
+  //       console.log("Item added to shopping cart:", item);
+  //       const currentDataSnapshot = await getDocs(glassesCollection);
+  //       const glassesInTheShopCart = currentDataSnapshot.docs.map((doc) => ({
+  //         id: doc.id,
+  //         ...doc.data(),
+  //       }));
+  //       console.log(
+  //         "Current data in glassesInTheShopCart:",
+  //         glassesInTheShopCart
+  //       );
+  //       dispatch(setCurrentShoppingCartList(glassesInTheShopCart));
+  //     } else {
+  //       console.log(
+  //         "Item with the same itemNumber already exists in the shopping cart."
+  //       );
+  //       // Handle the case where the item already exists, perhaps by updating its quantity
+  //       // if that's the desired behavior.
+  //     }
+  //     // const currentDataSnapshot = await getDocs(glassesCollection);
+  //     // const glassesInTheShopCart = currentDataSnapshot.docs.map((doc) => ({
+  //     //   id: doc.id,
+  //     //   ...doc.data(),
+  //     // }));
+  //     // console.log(
+  //     //   "Current data in glassesInTheShopCart:",
+  //     //   glassesInTheShopCart
+  //     // );
+  //     // dispatch(setCurrentShoppingCartList(glassesInTheShopCart));
+  //   } catch (error) {
+  //     console.error("Error in Adding Glasses to Shopping Cart", error);
+  //     throw error;
+  //   }
+  // };
+  // ------------------------------
+  // const handleAddtoCart = async () => {
+  //   const currentParamsId_Cardinfo = {
+  //     ...currentParamsId_Card,
+
+  //     quantity: currentParamsId_Card.quantity + 1,
+  //     selectedColor: selectedColor,
+  //     selectedFrameSize: selectedFrameSize,
+  //   };
+  //   console.log("INSIDE currentParamsId_Card", currentParamsId_Card);
+  //   const db = getFirestore();
+  //   const glassesCollection = collection(db, "glassesInTheShopCart");
+
+  //   try {
+  //     // Check if the item already exists in the cart
+  //     const queryRef = query(
+  //       glassesCollection,
+  //       where("itemNumber", "==", currentParamsId_Card.itemNumber)
+  //     );
+  //     const querySnapshot = await getDocs(queryRef);
+
+  //     if (querySnapshot.empty) {
+  //       // If the item doesn't exist, create a new document
+  //       const newDocRef = doc(collection(db, "glassesInTheShopCart"));
+  //       await addDoc(glassesCollection,{ currentParamsId_Cardinfo});
+  //       console.log("Item added to shopping cart:", currentParamsId_Cardinfo);
+  //     } else {
+  //       // If the item exists, update its quantity (and other details if necessary)
+  //       const existingDocRef = querySnapshot.docs[0].ref;
+  //       await setDoc(existingDocRef, currentParamsId_Cardinfo, { merge: true });
+  //       console.log("Item updated in shopping cart:", currentParamsId_Cardinfo);
+  //     }
+
+  //     // Fetch the updated shopping cart list from Firestore
+  //     const updatedSnapshot = await getDocs(glassesCollection);
+  //     const updatedCartList = updatedSnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+  //     console.log("updatedCartList", updatedCartList);
+  //     // Dispatch the updated cart list to the Redux store
+  //     //dispatch(setCurrentShoppingCartList(updatedCartList));
+  //   } catch (error) {
+  //     console.error("Error handling add to cart", error);
+  //   }
+  // };
+  const handleAddtoCart = async () => {
     const currentParamsId_Cardinfo = {
       ...currentParamsId_Card,
       quantity: currentParamsId_Card.quantity + 1,
       selectedColor: selectedColor,
       selectedFrameSize: selectedFrameSize,
     };
-    axios
-      .post(
-        "https://vivaser.onrender.com/api/v1/shop",
-        currentParamsId_Cardinfo
-      )
-      .then((res) => {
-        // console.log("46464", currentParamsId_Cardinfo);
-        // console.log("iii", item);
-        // console.log("DETAIL:add to shopping cart", res.data.data);
 
-        // setShoppingCartList(res.data);
-        axios
-          .get("https://vivaser.onrender.com/api/v1/shop")
-          .then((res) => {
-            // console.log("Get shoppingCartList data", res.data.data);
-            dispatch(setCurrentShoppingCartList(res.data.data));
-          })
-          .catch((error) => {
-            // console.log("get shop item fail", error);
-          });
-      })
-      .catch((error) => {
-        console.log("DETAIL:addItem Failed", error);
+    const db = getFirestore();
+    const glassesCollection = collection(db, "glassesInTheShopCart");
+
+    try {
+      // Add a new document to Firestore with addDoc
+      const docRef = await addDoc(glassesCollection, currentParamsId_Cardinfo);
+      //console.log("currentParamsId_Cardinfo", currentParamsId_Cardinfo);
+
+      // Fetch the updated shopping cart list from Firestore
+      const updatedSnapshot = await getDocs(glassesCollection);
+      // const updatedCartList = updatedSnapshot.docs.map((doc) => ({
+      //   id: doc.id,
+      //   // ...doc.data(),
+      //   ...(data.item ? data.item : data),
+      // }));
+      const updatedCartList = updatedSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...(data.item ? data.item : data), // Use data.item if it exists, otherwise use data directly
+        };
       });
+      //console.log("Detail PAGE : ", updatedCartList);
+      // Dispatch the updated cart list to the Redux store
+      dispatch(setCurrentShoppingCartList(updatedCartList));
+    } catch (error) {
+      console.error("Error adding item to cart", error);
+    }
   };
 
   //Remove item from shopping cart
-  const handlerRemovefromCart = () => {
-    // const newList = shoppingCartList.filter((eachItem) => {
-    //   return eachItem.itemNumber !== currentParamsId_Card.itemNumber;
-    // });
-    // setShoppingCartList(newList);
-    let itemNumbernum = { itemNumber };
-    axios
-      .post(
-        "https://vivaser.onrender.com/api/v1/shopproductCardDelete",
-        itemNumbernum
-      )
-      .then((res) => {
-        // console.log("shopProductCardDelete", res.data);
-        // console.log("remove item", itemNumber);
-        axios
-          .get("https://vivaser.onrender.com/api/v1/shop")
-          .then((res) => {
-            // console.log("Get shoppingCartList data", res.data.data);
-            dispatch(setCurrentShoppingCartList(res.data.data));
-          })
-          .catch((error) => {
-            // console.log("get shop item fail", error);
-          });
-      })
-      .catch((error) => {
-        // console.log("Fail to remove item", error);
-      });
+  // const handlerRemovefromCart = () => {
+  //   // const newList = shoppingCartList.filter((eachItem) => {
+  //   //   return eachItem.itemNumber !== currentParamsId_Card.itemNumber;
+  //   // });
+  //   // setShoppingCartList(newList);
+  //   let itemNumbernum = { itemNumber };
+  //   axios
+  //     .post(
+  //       "https://vivaser.onrender.com/api/v1/shopproductCardDelete",
+  //       itemNumbernum
+  //     )
+  //     .then((res) => {
+  //       // console.log("shopProductCardDelete", res.data);
+  //       // console.log("remove item", itemNumber);
+  //       axios
+  //         .get("https://vivaser.onrender.com/api/v1/shop")
+  //         .then((res) => {
+  //           // console.log("Get shoppingCartList data", res.data.data);
+  //           dispatch(setCurrentShoppingCartList(res.data.data));
+  //         })
+  //         .catch((error) => {
+  //           // console.log("get shop item fail", error);
+  //         });
+  //     })
+  //     .catch((error) => {
+  //       // console.log("Fail to remove item", error);
+  //     });
+  // };
+  // const handlerRemovefromCart = async (itemNumber) => {
+  //   const db = getFirestore();
+  //   const glassesCollection = collection(db, "glassesInTheShopCart");
+
+  //   try {
+  //     // Create a query against the collection to find an item with the same itemNumber
+  //     const queryRef = query(
+  //       glassesCollection,
+  //       where("item.itemNumber", "==", itemNumber)
+  //     );
+  //     // Execute the query
+  //     const querySnapshot = await getDocs(queryRef);
+
+  //     // Create an array of promises for each delete operation
+  //     // const deletePromises = querySnapshot.docs.map((doc) =>
+  //     //   deleteDoc(doc.ref)
+  //     // );
+  //     querySnapshot.forEach(async (doc) => {
+  //       await deleteDoc(doc.ref);
+  //       console.log(
+  //         `Item with itemNumber ${itemNumber} removed from shopping cart.`
+  //       );
+  //     });
+  //     // Wait for all delete operations to complete
+  //     // await Promise.all(deletePromises);
+  //     // console.log(
+  //     //   `All items with itemNumber ${itemNumber} removed from shopping cart.`
+  //     // );
+
+  //     // After removing the items, retrieve the current data from the collection to update Redux
+  //     const currentDataSnapshot = await getDocs(glassesCollection);
+  //     const glassesInTheShopCart = currentDataSnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data().item, // Assuming that the structure includes an 'item' property
+  //     }));
+  //     console.log("DETAIL DELETE: glassesInTheShopCart", glassesInTheShopCart);
+  //     // Dispatch the updated cart list to the Redux store
+  //     //dispatch(setCurrentShoppingCartList(glassesInTheShopCart));
+  //   } catch (error) {
+  //     console.error("Error in Removing Glasses from Shopping Cart", error);
+  //     throw error;
+  //   }
+  // };
+  // const handlerRemovefromCart = async (itemNumber) => {
+  //   const db = getFirestore();
+  //   const glassesCollection = collection(db, "glassesInTheShopCart");
+
+  //   try {
+  //     // Create a query against the collection to find an item with the same itemNumber
+  //     const queryRef = query(
+  //       glassesCollection,
+  //       where("item.itemNumber", "==", itemNumber)
+  //     );
+  //     // Execute the query
+  //     const querySnapshot = await getDocs(queryRef);
+
+  //     // // Create an array of promises for each delete operation
+  //     // const deletePromises = querySnapshot.docs.map((doc) =>
+  //     //   deleteDoc(doc.ref)
+  //     // );
+
+  //     // Wait for all delete operations to complete
+  //     // await Promise.all(deletePromises);
+  //     querySnapshot.forEach(async (doc) => {
+  //       await deleteDoc(doc.ref);
+  //       console.log(
+  //         `Item with itemNumber ${itemNumber} removed from shopping cart.`
+  //       );
+  //     });
+  //     // After removing the items, retrieve the current data from the collection to update Redux
+  //     const currentDataSnapshot = await getDocs(glassesCollection);
+  //     const glassesInTheShopCart = currentDataSnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+
+  //     console.log("DELETE:glassesInTheShopCart", glassesInTheShopCart);
+  //     // Dispatch the updated cart list to the Redux store
+  //     //dispatch(setCurrentShoppingCartList(glassesInTheShopCart));
+  //   } catch (error) {
+  //     console.error("Error in Removing Glasses from Shopping Cart", error);
+  //     throw error;
+  //   }
+  // };
+  // Third times
+
+  const handlerRemovefromCart = async (itemNumber) => {
+    const db = getFirestore();
+    const glassesCollection = collection(db, "glassesInTheShopCart");
+
+    try {
+      // Create a query against the collection to find an item with the same itemNumber
+      const queryRef = query(
+        glassesCollection,
+        where("itemNumber", "==", itemNumber)
+      );
+      // Execute the query
+      const querySnapshot = await getDocs(queryRef);
+
+      // Collect all delete promises
+      const deletePromises = querySnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+
+      // Await all delete operations
+      await Promise.all(deletePromises);
+
+      // Log the result
+      // console.log(
+      //   `All items with itemNumber ${itemNumber} removed from shopping cart.`
+      // );
+
+      // After removal, fetch the updated list of items
+      const updatedSnapshot = await getDocs(glassesCollection);
+      const glassesInTheShopCart = updatedSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Dispatch the updated list to your Redux store
+      dispatch(setCurrentShoppingCartList(glassesInTheShopCart));
+    } catch (error) {
+      console.error("Error in Removing Glasses from Shopping Cart", error);
+    }
   };
   // console.log("detail setSelectedFrameSize", setSelectedFrameSize);
   const shoppingCartData = useSelector((state) => {
@@ -222,7 +493,7 @@ export default function Productdetail({ productsInfo }) {
             {ifItemInCart ? (
               <div
                 className="glasses_addtobask_remove"
-                onClick={() => handlerRemovefromCart()}
+                onClick={() => handlerRemovefromCart(itemNumber)}
               >
                 Remove From Basket
               </div>

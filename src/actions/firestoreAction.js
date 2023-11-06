@@ -20,7 +20,7 @@ const fetchDataFailure = (error) => ({
 
 // Async action creator
 export const fetchDataFromFirestore = () => {
-  console.log("Fetching ...........");
+  // console.log("Fetching ...........");
   return (dispatch, getState, { getFirestore }) => {
     dispatch(fetchDataRequest());
     const firestore = getFirestore();
@@ -33,7 +33,7 @@ export const fetchDataFromFirestore = () => {
           ...doc.data(),
           id: doc.id,
         }));
-        console.log("Fetching result :::::", data);
+        //("Fetching result :::::", data);
         dispatch(fetchDataSuccess(data));
       })
       .catch((error) => {

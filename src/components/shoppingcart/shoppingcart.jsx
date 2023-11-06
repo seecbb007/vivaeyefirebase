@@ -20,10 +20,11 @@ import {
   getDocs,
   doc,
   onSnapshot,
+  writeBatch,
 } from "firebase/firestore";
-
+import { setCurrentShoppingCartList } from "../../actions/shoppingCartAction";
 import getItemInShoppingCart from "../../utils/fireBaseAPI";
-import { getGlassesAndDocuments } from "../../utils/fireBaseAPI";
+import { fetchGlassesInTheShopCart } from "../../utils/fireBaseAPI";
 
 export default function Shoppingcart({ handleShoppingCartClick }) {
   //get data from redux reducer
@@ -61,7 +62,7 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
   //     throw error;
   //   }
   // };
-  const [shoppingCartData, setShoppingCartData] = useState([]);
+  //  const [shoppingCartData, setShoppingCartData] = useState([]);
 
   // const fetchGlassesInTheShopCart = async () => {
   //   try {
@@ -77,16 +78,22 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
   //       const data = doc.data();
   //       return data.item; // 假设每个文档都有一个 'item' 字段
   //     });
-
-  //     // setShoppingCartData(items); // Set the state
+  //     console.log("items", items);
+  //     setShoppingCartData(items); // Set the state
   //   } catch (error) {
   //     console.error("Error fetching glasses from the shop cart:", error);
   //   }
   // };
 
-  useEffect(() => {
-    fetchDataFromFirestore();
-  }, []);
+  // useEffect(() => {
+  //   const fetchingGlassInShoppingCart = async () => {
+  //     const currentShoppingCartData = await fetchGlassesInTheShopCart();
+  //     console.log("lala currentShoppingCartData", currentShoppingCartData);
+  //     setShoppingCartData(currentShoppingCartData);
+  //     dispatch(setCurrentShoppingCartList(currentShoppingCartData));
+  //   };
+  //   fetchingGlassInShoppingCart();
+  // }, []);
 
   // Call the function to fetch the data
 
@@ -95,14 +102,17 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
   //   dispatch(setCurrentShoppingCartList(glassesList));
   // }, []);
 
-  const shoppingCartDataFromRedux = useSelector((state) => {
-    return state?.firebaseReducer;
+  // const shoppingCartDataFromRedux = useSelector((state) => {
+  //   return state?.firebaseReducer;
+  // });
+  const shoppingCartData = useSelector((state) => {
+    return state.shoppingCartReducer.shoppingCartList;
   });
 
-  //console.log("shoppingCartDataFromRedux", shoppingCartDataFromRedux);
+  //console.log("currentShoppingCart", shoppingCartData);
+  // console.log("shoppingCartDataFromRedux", shoppingCartDataFromRedux);
 
   const ifLogedin = localStorage.getItem("token");
-  useEffect(() => {}, []);
 
   // console.log("111shoppingCartData", shoppingCartData);
 
@@ -152,25 +162,50 @@ export default function Shoppingcart({ handleShoppingCartClick }) {
     initial_subtotalPrice
   );
   // Clear Basket Button
-  const handleClearBasket = () => {
-    axios
-      .post("https://vivaser.onrender.com/api/v1/shopproductCardDeleteAll")
-      .then((res) => {
-        // console.log("Empty shopping cart", res.data);
-        axios
-          .get("https://vivaser.onrender.com/api/v1/shop")
-          .then((res) => {
-            // console.log("Empty whole list", res.data.data);
-            // dispatch(setCurrentShoppingCartList(res.data.data));
-          })
-          .catch((error) => {
-            console.log("faile to empty", error);
-          });
-      })
-      .catch((error) => {
-        console.log("Failed to empty shopping cart", error);
+  // const handleClearBasket = () => {
+  //   axios
+  //     .post("https://vivaser.onrender.com/api/v1/shopproductCardDeleteAll")
+  //     .then((res) => {
+  //       // console.log("Empty shopping cart", res.data);
+  //       axios
+  //         .get("https://vivaser.onrender.com/api/v1/shop")
+  //         .then((res) => {
+  //           // console.log("Empty whole list", res.data.data);
+  //           // dispatch(setCurrentShoppingCartList(res.data.data));
+  //         })
+  //         .catch((error) => {
+  //           console.log("faile to empty", error);
+  //         });
+  //     })
+  //     .catch((error) => {
+  //       console.log("Failed to empty shopping cart", error);
+  //     });
+  //   // setShoppingCartList([]);
+  // };
+
+  const handleClearBasket = async () => {
+    const db = getFirestore();
+    const glassesCollection = collection(db, "glassesInTheShopCart");
+
+    try {
+      // Retrieve all documents from the collection
+      const snapshot = await getDocs(glassesCollection);
+
+      // Prepare a batch to delete all documents
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
       });
-    // setShoppingCartList([]);
+
+      // Commit the batch
+      await batch.commit();
+      //console.log("All items in the shopping cart have been cleared.");
+
+      // Dispatch an action to clear the shopping cart in the Redux store, if needed
+      dispatch(setCurrentShoppingCartList([]));
+    } catch (error) {
+      console.error("Error clearing the shopping cart", error);
+    }
   };
   // check out Button
   const handleCheckOut = () => {

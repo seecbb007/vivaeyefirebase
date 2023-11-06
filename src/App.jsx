@@ -344,10 +344,38 @@ function App() {
 
     //setLoading(false);
   };
+
+  const fetchGlassesInTheShopCart = async () => {
+    // Get a reference to the Firestore database
+    const db = getFirestore();
+
+    // Reference the 'glassesInTheShopCart' collection
+    const glassesCollectionRef = collection(db, "glassesInTheShopCart");
+
+    try {
+      // Fetch the collection data
+      const querySnapshot = await getDocs(glassesCollectionRef);
+
+      // Map through documents and get the data
+      const glassesList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Do something with glassesList, e.g., set state, dispatch to Redux, etc.
+      //console.log(glassesList);
+      dispatch(setCurrentShoppingCartList(glassesList));
+      return glassesList;
+    } catch (error) {
+      console.error("Error fetching glasses in the shop cart:", error);
+      throw new Error(error);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchGlassesInTheShopCart();
   }, []);
-
   // (async () => {
   //   try {
   //     // Your batch code here
@@ -381,13 +409,13 @@ function App() {
   //       console.log("get shop item fail", error);
   //     });
   // }, []);
-  useEffect(() => {
-    const getGlassesData = async () => {
-      const shoppingCartGlassesMap = await getGlassesAndDocuments();
-      console.log("shoppingCartGlassesMap", shoppingCartGlassesMap);
-    };
-    getGlassesData();
-  }, []);
+  // useEffect(() => {
+  //   const getGlassesData = async () => {
+  //     const shoppingCartGlassesMap = await getGlassesAndDocuments();
+  //     console.log("shoppingCartGlassesMap", shoppingCartGlassesMap);
+  //   };
+  //   getGlassesData();
+  // }, []);
   //Get Data from  Backend Server
 
   //Shop页面中的18张眼镜卡片里的所有资料：img,title,subtitle,price

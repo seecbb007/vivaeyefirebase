@@ -192,7 +192,7 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
   };
 
   const signUpAndAddUserToFirestore = async (email, password, fullname) => {
-    console.log("see if user info valid", email, password, fullname);
+    //console.log("see if user info valid", email, password, fullname);
     const auth = getAuth();
     try {
       // Sign up the user
@@ -228,14 +228,14 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
   };
   const submitIn = (email, password) => {
     const auth = getAuth();
-    console.log("eeemail", email);
-    console.log("Ppppassword", password);
+    // console.log("eeemail", email);
+    // console.log("Ppppassword", password);
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // Signed in
         const user = userCredential.user;
         const auth = getAuth();
-        console.log("In submitIn success", user);
+        // console.log("In submitIn success", user);
 
         dispatch(setLoginData(true));
         dispatch(
@@ -252,8 +252,8 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
-        console.log("error sign in", error);
-        console.log("errorMessage sign in", error);
+        // console.log("error sign in", error);
+        // console.log("errorMessage sign in", error);
       });
     // axios
     //   .post("https://vivaser.onrender.com/api/v1/signin", currentLoginUserInfo)
@@ -318,11 +318,11 @@ export default function SignupIn({ whichSign, userContent, authQuestion }) {
   const handleSubmitIn = (e) => {
     e.preventDefault();
     submitIn(currentLoginUserInfo.email, currentLoginUserInfo.password);
-    console.log(
-      "current",
-      currentLoginUserInfo.email,
-      currentLoginUserInfo.password
-    );
+    // console.log(
+    //   "current",
+    //   currentLoginUserInfo.email,
+    //   currentLoginUserInfo.password
+    // );
   };
 
   const getData = async () => {

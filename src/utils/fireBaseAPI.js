@@ -1,5 +1,5 @@
 import { db } from "../firebase/config";
-import { collection, getDocs, query } from "firebase/firestore";
+import { collection, getDocs, getFirestore, query } from "firebase/firestore";
 
 import { setCurrentShoppingCartList } from "../actions/shoppingCartAction";
 import { useDispatch } from "react-redux";
@@ -14,14 +14,41 @@ export const getItemInShoppingCart = async () => {
   return data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
 };
 
-export const getGlassesAndDocuments = async () => {
-  const collectionRef = collection(db, "glassesInTheCart");
-  const q = query(collectionRef);
+// export const getGlassesAndDocuments = async () => {
+//   try {
+//     const db = getFirestore();
+//     const glassesCollectionRef = collection(db, "glassesInTheCart");
+//     const querySnapshot = await getDocs(glassesCollectionRef);
 
-  const querySnapshot = await getDocs(q);
-  const glassesData = querySnapshot.docs.reduce((docSnapshot) => {
-    const { eachGlasses } = docSnapshot.data();
-    console.log(eachGlasses, "eachGlasses");
-  }, {});
-  return glassesData;
+//     const items = querySnapshot.docs.map((doc) => {
+//       const data = doc.data();
+//       console.log("data", data);
+//       // 假设每个文档都有一个 'item' 字段
+//     });
+//     console.log("items is : ", items);
+//   } catch (error) {
+//     console.error("Error on Fetching shopping cart data : ", error);
+//   }
+// };
+export const fetchGlassesInTheShopCart = async () => {
+  try {
+    const db = getFirestore();
+    const glassesCollectionRef = collection(db, "glassesInTheShopCart");
+    const querySnapshot = await getDocs(glassesCollectionRef);
+
+    // querySnapshot.forEach((doc) => {
+    //   shoppingCartData.push({ item: doc.data() });
+    //   //shoppingCartData.push(...doc.data());
+    // });
+    const items = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return data.item; // 假设每个文档都有一个 'item' 字段
+    });
+    console.log("items", items);
+
+    setCurrentShoppingCartList(items);
+    return items; // Set the state
+  } catch (error) {
+    console.error("Error fetching glasses from the shop cart:", error);
+  }
 };
